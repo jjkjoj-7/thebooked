@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #reader-wrapper {
+            width: 100%;
+            max-width: 480px;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 24px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #reader { border: none !important; border-radius: 16px; overflow: hidden; }
+        #result { width: 100%; max-width: 480px; margin-bottom: 100px; }
+
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border-top: 8px solid #cbd5e1;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .status-upcoming { border-color: var(--primary); }
+        .status-now { border-color: var(--success); }
+        .status-late { border-color: var(--warning); }
+        .status-finished { border-color: var(--danger); }
+        .status-cancelled { border-color: #64748b; }
+
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h2 { margin: 0; font-size: 1.5rem; color: #0f172a; }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        .item { display: flex; flex-direction: column; }
+        .label { font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; margin-bottom: 4px; }
+        .value { font-weight: 600; color: #334155; word-break: break-all; }
+
+        .divider { height: 1px; background: #f1f5f9; margin: 15px 0; }
+
+        .status-badge { text-align: center; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 0.9rem; margin-top: 10px; }
+        .bg-upcoming { background: #eef2ff; color: var(--primary); }
+        .bg-now { background: #ecfdf5; color: var(--success); }
+        .bg-late { background: #fffbeb; color: var(--warning); }
+        .bg-finished { background: #fef2f2; color: var(--danger); }
+        .bg-cancelled { background: #f1f5f9; color: #64748b; }
+
+        .controls { position: fixed; bottom: 30px; display: flex; gap: 12px; z-index: 100; }
+        button { padding: 14px 28px; border-radius: 16px; border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        #startScan { background: var(--primary); color: white; }
+        #stopScan { background: white; color: var(--danger); display: none; border: 2px solid var(--danger); }
+        .btn-retry { width: 100%; margin-top: 20px; background: #f1f5f9; color: #475569; justify-content: center; }
+        .loader { text-align: center; padding: 20px; color: var(--primary); font-weight: bold; }
+        
+        #logoutBtn {
+            background: #ff7675;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <header style="width: 100%; display: flex; justify-content: flex-end; padding: 10px; max-width: 480px;">
+        <button id="logoutBtn">Log Out</button>
+    </header>
+
+    <div id="reader-wrapper">
+        <div id="reader"></div>
+    </div>
+
+    <div id="result"></div>
+
+    <div class="controls">
+        <button id="startScan">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 012-2h2m10 0h2a2 2 0 012 2v2m0 10v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"></path></svg>
+            Start Scanner
+        </button>
+        <button id="stopScan">Stop</button>
+    </div>
+
+    <audio id="beep" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app-check.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqt4WhR-KsT5u3eQ1af0_CmKlDNC62few",
+            authDomain: "kitchen-menu-28ba8.firebaseapp.com",
+            projectId: "kitchen-menu-28ba8",
+            storageBucket: "kitchen-menu-28ba8.appspot.com",
+            messagingSenderId: "280104304769",
+            appId: "1:280104304769:web:40ec1188d8a7a7234d0d80"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider('6LfKZHYsAAAAACDl3MgZa-8CNmiG02xuJGNXigiV'), 
+  isTokenAutoRefreshEnabled: true
+});
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+     
+        const startBtn = document.getElementById("startScan");
+        const stopBtn = document.getElementById("stopScan");
+        const resultDiv = document.getElementById("result");
+        const logoutBtn = document.getElementById("logoutBtn");
+        const beep = document.getElementById("beep");
+
+        let html5QrCode;
+        let restaurantConfig = {};
+
+   
+        logoutBtn.onclick = async () => {
+            try {
+                await signOut(auth);
+                localStorage.removeItem("restaurantID");
+                window.location.href = "loginscan.html"; 
+            } catch (error) {
+                alert("Error logging out: " + error.message);
+            }
+        };
+
+    
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = "loginscan.html?redirect=scanqr.html";
+                return;
+            }
+         
+            try {
+                const docRef = doc(db, "settings", user.uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    restaurantConfig = docSnap.data();
+                    window.restaurantID = restaurantConfig.restaurantID || user.uid;
+                }
+            } catch (e) { console.error("Error loading settings", e); }
+        });
+
+        startBtn.onclick = () => {
+            resultDiv.innerHTML = "";
+            startBtn.style.display = "none";
+            stopBtn.style.display = "flex";
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                async (decodedText) => {
+                    beep.play();
+                    stopScanning();
+                    await fetchAndRender(decodedText);
+                }
+            ).catch(err => {
+                alert("Camera Error: " + err);
+                stopScanning();
+            });
+        };
+
+        function stopScanning() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    stopBtn.style.display = "none";
+                    startBtn.style.display = "flex";
+                }).catch(() => {
+                    stopBtn.style.display = "none";
+                    startBtn.style.display = "flex";
+                });
+            }
+        }
+
+        stopBtn.onclick = stopScanning;
+
+        async function fetchAndRender(scannedValue) {
+            resultDiv.innerHTML = `<div class="loader">Loading Reservation Data...</div>`;
+            let id = scannedValue;
+            try {
+                const parsed = JSON.parse(scannedValue);
+                id = parsed.id || scannedValue;
+            } catch(e) { id = scannedValue; }
+
+            try {
+                const docRef = doc(db, "reservations", id);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    renderResult(docSnap.data(), docSnap.id);
+                } else {
+                    resultDiv.innerHTML = `<div class="card" style="border-color:var(--danger); text-align:center;"><h3>Not Found</h3><button class="btn-retry" onclick="location.reload()">Scan Another</button></div>`;
+                }
+            } catch (error) { 
+                alert(error.message); 
+                resultDiv.innerHTML = "";
+                startBtn.style.display = "flex";
+            }
+        }
+
+        function renderResult(d, docId) {
+            const now = new Date();
+            const start = new Date(d.startTime);
+            const end = new Date(d.endTime);
+            
+            const totalMinutes = Math.round((end - start) / 60000);
+            const hours = Math.floor(totalMinutes / 60);
+            const mins = totalMinutes % 60;
+            
+            let durationText = hours > 0 ? `${hours}h ${mins > 0 ? mins + 'm' : ''}` : `${mins} Min`;
+
+            const diffFromStart = Math.round((now - start) / 60000);
+            const reservationDate = start.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+            let dynamicStatus = "", statusClass = "", badgeClass = "", timeAnalysis = "";
+
+            if (d.status && d.status.toLowerCase() === 'cancelled') {
+                dynamicStatus = "Cancelled"; statusClass = "status-cancelled"; badgeClass = "bg-cancelled";
+                timeAnalysis = "This reservation was cancelled.";
+            } else if (now < start) {
+                dynamicStatus = "Upcoming"; statusClass = "status-upcoming"; badgeClass = "bg-upcoming";
+                timeAnalysis = `Starts in: ${Math.abs(diffFromStart)} min`;
+            } else if (now >= start && now <= end) {
+                dynamicStatus = "Now";
+                const isLate = diffFromStart > 5;
+                statusClass = isLate ? "status-late" : "status-now";
+                badgeClass = isLate ? "bg-late" : "bg-now";
+                timeAnalysis = isLate ? `Late by: ${diffFromStart} min` : `Status: On time`;
+            } else {
+                dynamicStatus = "Finished"; statusClass = "status-finished"; badgeClass = "bg-finished";
+                timeAnalysis = `Expired: ${Math.round((now - end) / 60000)} min ago`;
+            }
+
+            resultDiv.innerHTML = `
+                <div class="card ${statusClass}">
+                    <div class="header">
+                        <h2>Reservation Details</h2>
+                    </div>
+
+                    <div class="grid">
+                        <div class="item"><span class="label">First Name</span><span class="value">${d.firstName || '-'}</span></div>
+                        <div class="item"><span class="label">Last Name</span><span class="value">${d.lastName || '-'}</span></div>
+                        <div class="item"><span class="label">Phone</span><span class="value">${d.phone || '-'}</span></div>
+                        <div class="item"><span class="label">Table</span><span class="value">${d.table || '-'}</span></div>
+                        <div class="item"><span class="label">Guests</span><span class="value">${d.people || '0'} People</span></div>
+                        <div class="item"><span class="label">Address</span><span class="value">${d.address || '-'}</span></div>
+                        <div class="item"><span class="label">Date</span><span class="value" style="color:var(--primary)">${reservationDate}</span></div>
+                        <div class="item"><span class="label">Status</span><span class="value" style="color:var(--primary)">${dynamicStatus}</span></div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="grid">
+                        <div class="item"><span class="label">Start Time</span><span class="value">${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>
+                        <div class="item"><span class="label">End Time</span><span class="value">${end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>
+                        <div class="item"><span class="label">Duration</span><span class="value">${durationText}</span></div>
+                        <div class="item"><span class="label">Email</span><span class="value">${d.email || '-'}</span></div>
+                    </div>
+
+                    <div class="status-badge ${badgeClass}">
+                        ${dynamicStatus.toUpperCase()}<br>
+                        <small style="font-weight:400">${timeAnalysis}</small>
+                    </div>
+
+                    <button class="btn-retry" onclick="location.reload()">Scan Another Code</button>
+                </div>
+            `;
+        }
+        
+  function getKeyInfo(e){
+    return {
+      key: (e.key || '').toLowerCase(),
+      code: (e.code || '').toLowerCase(),
+      keyCode: e.keyCode || e.which || 0,
+      ctrl: e.ctrlKey || false,
+      shift: e.shiftKey || false,
+      alt: e.altKey || false,
+      meta: e.metaKey || false
+    };
+  }
+
+  function handleKeydown(e){
+    const k = getKeyInfo(e);
+
+    const K = { F12: 123, U: 85, S: 83, I: 73, J: 74, C: 67, K: 75, P: 80, M: 77 };
+
+    const isF12 = (k.keyCode === K.F12) || k.key === 'f12' || k.code === 'f12';
+    const isCtrlU = (k.ctrl || k.meta) && (k.key === 'u' || k.keyCode === K.U);
+    const isCtrlS = (k.ctrl || k.meta) && (k.key === 's' || k.keyCode === K.S);
+    const isCtrlShiftI = (k.ctrl || k.meta) && k.shift && (k.key === 'i' || k.keyCode === K.I);
+    const isCtrlShiftJ = (k.ctrl || k.meta) && k.shift && (k.key === 'j' || k.keyCode === K.J);
+    const isCtrlShiftC = (k.ctrl || k.meta) && k.shift && (k.key === 'c' || k.keyCode === K.C);
+    const isCtrlShiftK = (k.ctrl || k.meta) && k.shift && (k.key === 'k' || k.keyCode === K.K);
+    const isCtrlShiftP = (k.ctrl || k.meta) && k.shift && (k.key === 'p' || k.keyCode === K.P);
+    const isCtrlShiftM = (k.ctrl || k.meta) && k.shift && (k.key === 'm' || k.keyCode === K.M);
+
+    if(isF12 || isCtrlU || isCtrlS || isCtrlShiftI || isCtrlShiftJ || isCtrlShiftC || isCtrlShiftK || isCtrlShiftP || isCtrlShiftM){
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+
+    if(k.keyCode === 93 || k.key === 'contextmenu' || k.code === 'contextmenu'){
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+
+  document.addEventListener('keydown', handleKeydown, true);
+
+  document.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+  }, true);
+
+
+  function detectByWindowSize(){
+    try{
+      const wDiff = Math.abs((window.outerWidth || 0) - (window.innerWidth || 0));
+      const hDiff = Math.abs((window.outerHeight || 0) - (window.innerHeight || 0));
+      return (wDiff > threshold) || (hDiff > threshold);
+    }catch(e){
+      return false;
+    }
+  }
+
+  const _detector = new Image();
+  Object.defineProperty(_detector, 'id', {
+    get: function(){
+      try{ createOverlay(); devtoolsOpen = true; }catch(e){}
+      return 'detector';
+    }
+  });
+
+  function checkDevTools(){
+    let detected = false;
+    if(detectByWindowSize()) detected = true;
+    try{ console.log(_detector); }catch(e){}
+    if(detected && !devtoolsOpen){
+      devtoolsOpen = true;
+      createOverlay();
+      console.warn('DevTools detected — overlay enabled.');
+    } else if(!detected && devtoolsOpen){
+      devtoolsOpen = false;
+      removeOverlay();
+    }
+  }
+
+  const intervalId = setInterval(checkDevTools, 1000);
+  window.addEventListener('resize', checkDevTools);
+
+  document.addEventListener('keydown', function(e){
+    const k = getKeyInfo(e);
+    if((k.ctrl || k.meta) && k.key === 'u'){ e.preventDefault(); e.stopPropagation(); return false; }
+  }, true);
+
+  try{ console.info('Page protections (silent) enabled.'); }catch(e){}
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservation Control Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { 
+            --red: #d63031; 
+            --orange: #e17055; 
+            --green: #00b894; 
+            --dark: #1e1e26; 
+        }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--dark); 
+            color: #fff; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: auto; 
+        }
+        .search-area {
+    background: #2a2a35;
+    padding: 20px;
+    border-radius: 12px;
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: flex-end;
+    flex-wrap: wrap; 
+}
+
+        input, select { 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 1px solid #444; 
+            background: #16161d; 
+            color: #fff; 
+        }
+        
+        button { 
+            padding: 12px 20px; 
+            border-radius: 8px; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+        .btn-main { 
+            background: #3742fa; 
+            color: white; 
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: separate; 
+            border-spacing: 0 10px; 
+        }
+        th { 
+            padding: 15px; 
+            color: #888; 
+            text-transform: uppercase; 
+            font-size: 13px; 
+        }
+        td { 
+            background: #2a2a35; 
+            padding: 15px; 
+            text-align: center; 
+            border-top: 1px solid #333; 
+            border-bottom: 1px solid #333; 
+        }
+        
+
+        .status-badge { 
+            width: 15px; 
+            height: 15px; 
+            border-radius: 50%; 
+            display: inline-block; 
+            margin-right: 10px; 
+        }
+        
+
+        .expired td { border-left: 10px solid var(--red); }
+        .active td { border-left: 10px solid var(--orange); }
+        .future td { border-left: 10px solid var(--green); }
+        
+        .qr-canvas { 
+            background: white; 
+            padding: 4px; 
+            border-radius: 4px; 
+            width: 100px !important; 
+            height: 100px !important; 
+        }
+        .time-box { font-size: 14px; }
+        .time-label { 
+            color: #aaa; 
+            font-size: 11px; 
+            display: block; 
+            font-weight: bold; 
+        }
+
+        #editModal { 
+            display:none; 
+            position:fixed; 
+            top:0; 
+            left:0; 
+            width:100%; 
+            height:100%; 
+            background:rgba(0,0,0,0.85); 
+            justify-content:center; 
+            align-items:center; 
+            z-index: 1000; 
+        }
+        .modal-box { 
+            background:#2a2a35; 
+            padding:30px; 
+            border-radius:15px; 
+            width:400px; 
+        }
+        .modal-box label { 
+            font-size: 14px; 
+            margin-bottom: 5px; 
+            display: block; 
+            color: #ccc; 
+        }
+        .duration-line {
+        font-size: 12px;
+        color: #00c700;
+        margin-top: 4px;
+        font-style: italic;
+        }
+        .time-box {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .date-line {
+            font-weight: bold;
+            font-size: 15px;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .time-line {
+            font-size: 14px;
+            color: #00cec9;
+            letter-spacing: 1px;
+        }
+
+        .arrow {
+            color: #aaa;
+            margin: 0 6px;
+            font-weight: bold;
+        }
+
+        tr.cancelled {
+            background: rgba(0, 0, 0, 0.6) !important;
+            color: #888 !important;
+            text-decoration: line-through;
+        }
+
+
+        #logoutBtn {
+            background: rgba(214, 48, 49, 0.1); 
+            color: #d63031;
+            border: 1px solid #d63031;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        #logoutBtn:hover {
+            background: #d63031;
+            color: white;
+            box-shadow: 0 0 10px rgba(214, 48, 49, 0.3);
+        }
+header {
+    display: flex;
+    justify-content: flex-end; 
+    padding: 15px 20px;
+    background: var(--dark);
+    position: relative; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+        .footer-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(15, 15, 20, 0.9);
+
+    padding: 4px 0; 
+    z-index: 99999;
+    border-top: 1px solid rgba(0, 210, 255, 0.2);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    overflow: visible !important;
+}
+
+.footer-content {
+    display: flex;
+    flex-direction: row;   
+    align-items: center;
+    justify-content: center; 
+    flex-wrap: wrap; 
+}
+
+
+
+.dev-text {
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    line-height: 1.1;
+    white-space: normal; 
+}
+
+.my-name {
+    display: inline-block;
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    margin-left: 5px;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    filter: drop-shadow(0 0 5px rgba(0, 210, 255, 0.4));
+}
+
+.dev-text strong {
+    font-weight: 800; 
+}
+
+.dev-text:hover .my-name {
+    transform: scale(1.3);
+    filter: drop-shadow(0 0 15px rgba(0, 210, 255, 0.9));
+}
+
+
+.support-text {
+    font-size: 12px;
+    margin: 0 0 4px 0;
+    font-weight: 500;
+}
+
+.error-text {
+    color: #ff4757;
+    text-shadow: 0 0 8px rgba(255, 71, 87, 0.4);
+}
+
+.action-text {
+    color: #25D366;
+    text-shadow: 0 0 8px rgba(37, 211, 102, 0.4);
+    margin-left: 5px;
+}
+
+.footer-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+}
+
+.footer-link {
+    text-decoration: none;
+    color: #fff;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.3s;
+    opacity: 0.8;
+}
+
+.footer-link:hover {
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.footer-icon {
+    width: 22px;
+    height: 22px;
+}
+
+.blue-phone {
+    color: #00d2ff;
+}
+
+.divider {
+    width: 1px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+
+.wa-hover:hover {
+    color: #25D366 !important;
+    filter: drop-shadow(0 0 8px #25D366) drop-shadow(0 0 18px #25D366);
+}
+
+.call-hover:hover {
+    color: #00d2ff !important;
+    filter: drop-shadow(0 0 8px #00d2ff) drop-shadow(0 0 18px #00d2ff);
+}
+
+.wa-hover:active {
+    transform: scale(0.9);
+    color: #25D366 !important;
+    filter: drop-shadow(0 0 10px #25D366) drop-shadow(0 0 25px #25D366) !important;
+}
+
+.call-hover:active {
+    transform: scale(0.9);
+    color: #00d2ff !important;
+    filter: drop-shadow(0 0 10px #00d2ff) drop-shadow(0 0 25px #00d2ff) !important;
+}
+
+@media (max-width: 768px) {
+    .search-area {
+        flex-direction: column; 
+        align-items: stretch;
+    }
+    
+    .search-area input, .search-area select, .search-area button {
+        width: 100%; 
+    }
+
+    table {
+        display: block;
+        overflow-x: auto; 
+    }
+}
+
+.nav-links {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.nav-btn {
+    background: #2a2a35; 
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: 0.3s ease;
+    border: 1px solid #3f3f4d;
+}
+
+
+.res-btn:hover {
+    background: #00b894;
+    border-color: #00b894;
+    box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+    transform: translateY(-2px);
+}
+
+
+.scan-btn:hover {
+    background: #0984e3;
+    border-color: #0984e3;
+    box-shadow: 0 4px 15px rgba(9, 132, 227, 0.3);
+    transform: translateY(-2px);
+}
+
+.nav-btn i {
+    font-size: 18px;
+}
+
+@media (max-width: 600px) {
+    .nav-links {
+        justify-content: center;
+    }
+}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+  <button id="logoutBtn">Log Out</button>
+</header>
+
+    <h2>Reservation Control Panel</h2>
+
+<div class="nav-links">
+    <a href="https://thebookedsystem.com/reserve.html" target="_blank" class="nav-btn res-btn">
+        <span>New Reservation</span>
+        <i class="fas fa-plus-circle"></i> 
+    </a>
+
+    <a href="https://thebookedsystem.com/scanqr.html" target="_blank" class="nav-btn scan-btn">
+        <span>Scan QR Code</span>
+        <i class="fas fa-qrcode"></i> 
+    </a>
+</div>
+    <div class="search-area">
+        <input type="date" id="sDate">
+        <input type="text" id="sPhone" placeholder="Search Phone...">
+        <!-- <button class="btn-main" onclick="loadData()">Search</button> -->
+        <div class="search-area" style="position: relative;top: 40px;right: 15px;">
+    <input type="date" id="checkDate">
+    <select id="checkStartTime">
+
+
+        
+    </select>
+    <select id="checkEndTime"></select>
+    <button class="btn-main" onclick="checkAvailability()">Check</button>
+</div>
+
+    </div>
+<div class="filter-buttons" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; background: #2a2a35; padding: 15px; border-radius: 12px;">
+    <button onclick="filterStatus('all')" style="background: #4b7bec; color: #fff; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">All</button>
+
+        <button onclick="filterStatus('past')" style="background: #d63031; color: #fff; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">Past</button>
+    
+    <button onclick="filterStatus('now')" style="background: #e17055; color: #fff; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">Now</button>
+    
+    <button onclick="filterStatus('future')" style="background: #00b894; color: #fff; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">Future</button>
+    
+
+    
+    <button onclick="filterStatus('deleted')" style="background: #000000; color: #fff; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">cancelled</button>
+
+    <button onclick="showFreeSlots()" style="background: #f1c40f; color: #000; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; margin-left: auto;"> Free Time 📅</button>
+</div>
+    <table>
+        <thead>
+            <tr>
+                <th>QR & Status</th>
+                <th>Client</th>
+                <th>Num of People</th>
+                <th>Table</th>
+                <th>Time Schedule</th>
+                <th>Control</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<div id="editModal">
+    <div class="modal-box">
+        <h3>Update Booking</h3>
+        
+        <input type="hidden" id="mId">
+        <label>Date</label>
+     
+
+<input type="date" id="mDate" style="width:100%; margin-bottom:15px;">
+<label>Start Time</label>
+<select type="time" id="mStartTime" style="width:100%; margin-bottom:15px;"></select>
+
+<label>End Time</label>
+<select type="time" id="mEndTime" style="width:100%; margin-bottom:15px;"></select>
+
+        <label>Num of People</label>
+        <input type="number" id="mPeople" style="width:100%; margin-bottom:15px;">
+        <div id="availableTablesMsg"
+     style="margin-bottom:15px; font-size:18px; font-weight:bold; color:#00ffcc;">
+</div>
+
+<label>Assigned Table</label>
+
+<select id="mTable" style="width:100%; margin-bottom:20px;" disabled>-- Select Date & Time first --</select>
+
+
+        
+        <button onclick="updateBooking()" style="background:var(--green); color:#000; width:100%; margin-bottom:10px;">Save Updates</button>
+        <button onclick="closeModal()" style="background: #ff4757;color:#fff;width:100%;">Close</button>
+    </div>
+</div>
+<div id="statusModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; overflow-y:auto;">
+    <div style="background:#fff; width:90%; max-width:600px; margin:50px auto; padding:20px; border-radius:15px; font-family: sans-serif;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:10px;">
+            <h2 id="modalTitle" style="margin:0; color:#333;">Table Schedule</h2>
+            <button onclick="document.getElementById('statusModal').style.display='none'" style="background:#ff4757; color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer;">Close</button>
+        </div>
+        <div id="modalContent" style="margin-top:20px; line-height:1.6;">
+            </div>
+    </div>
+</div>
+<div id="qrModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; justify-content:center; align-items:center;">
+    <div style="background:#2a2a35; padding:30px; border-radius:15px; width:350px; text-align:center; border: 1px solid #444;">
+        <h3 style="margin-top:0; color:#fff;">QR Code Actions</h3>
+        
+        <div id="qrPreviewContainer" style="background:white; padding:15px; border-radius:10px; display:inline-block; margin-bottom:20px;">
+            <img id="qrPreviewImg" src="" style="width:200px; height:200px; display:block;">
+        </div>
+
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <button onclick="downloadQR()" style="background:#00b894; color:white; padding:12px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Download Image ⬇️</button>
+            <button onclick="copyQR()" style="background:#3742fa; color:white; padding:12px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;"> Copied 📋</button>
+            <button onclick="shareQR()" style="background:#e17055; color:white; padding:12px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;"> Share QR 📤</button>
+            <button onclick="document.getElementById('qrModal').style.display='none'" style="background:#444; color:white; padding:12px; border:none; border-radius:8px; cursor:pointer; margin-top:10px;">Close</button>
+        </div>
+    </div>
+</div>
+<div class="footer-bar">
+  <div class="footer-content">
+    
+
+    <span class="dev-text">
+      <strong>
+        
+        Developed by <span class="my-name">Mahmoud El-Hawary</span> — 
+        <span class="error-text">Need help?</span>
+        <span class="action-text">Contact support</span>
+      </strong>
+    </span>
+    <div class="footer-links">
+      <a href="https://wa.me/201284371004" target="_blank" class="footer-link wa-hover">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" class="footer-icon" alt="WhatsApp">
+        WhatsApp
+      </a>
+
+      <div class="divider"></div>
+
+      <a href="tel:+201284371004" class="footer-link call-hover">
+        <svg class="footer-icon" viewBox="0 0 24 24" fill="#00d2ff">
+          <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+        </svg>
+        Call
+      </a>
+
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+    
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app-check.js";
+import { getFirestore, collection, onSnapshot, query, where, getDocs, doc, updateDoc,getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAqt4WhR-KsT5u3eQ1af0_CmKlDNC62few",
+    authDomain: "kitchen-menu-28ba8.firebaseapp.com",
+    projectId: "kitchen-menu-28ba8",
+    storageBucket: "kitchen-menu-28ba8.firebasestorage.app",
+    messagingSenderId: "280104304769",
+    appId: "1:280104304769:web:40ec1188d8a7a7234d0d80"
+};
+
+const app = initializeApp(firebaseConfig);
+const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider('6LfKZHYsAAAAACDl3MgZa-8CNmiG02xuJGNXigiV'), 
+  isTokenAutoRefreshEnabled: true
+});
+const db = getFirestore(app);
+const auth = getAuth(app);
+const colRef = collection(db, "reservations");
+
+
+let unsubscribeReservations = null;
+
+
+function loadData(restaurantID) {
+
+    if (!restaurantID) {
+        console.error("No restaurantID");
+        return;
+    }
+
+    
+console.log("Loading data:");
+ 
+}
+
+
+async function loadSettings(restaurantID) {
+
+  if (!restaurantID) {
+      console.error("restaurantID missing");
+      return;
+  }
+
+  const settingsRef = doc(db, "settings", restaurantID);
+  const snap = await getDoc(settingsRef);
+
+  if (snap.exists()) {
+      applySettingsToUI(snap.data());
+  } else {
+      console.log("No settings found");
+  }
+}
+
+function applySettingsToUI(settings) {
+ 
+    window.allTables = settings.tables || [];
+    window.TOTAL_SEATS = settings.totalSeats || 0;
+    const open = settings.openTime || "15:00";
+    const close = settings.closeTime || "24:00";
+
+    const mTable = document.getElementById("mTable");
+    if (mTable) {
+        mTable.innerHTML = '<option value="">-- --</option>';
+        window.allTables.forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t;
+            opt.textContent = `${t}`;
+            mTable.appendChild(opt);
+        });
+    }
+
+
+    generateDynamicTimes(open, close);
+
+    console.log("Interface successfully synced with database settings");
+}
+
+
+
+
+
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    const restaurantID = user.uid;
+
+
+    console.log("Access Granted ✅"); 
+
+    await loadSettings(restaurantID);
+    startRealtimeMonitor(restaurantID);
+    loadData(restaurantID);
+});
+
+
+function loadReservations(uid) {
+
+    if (unsubscribeReservations) unsubscribeReservations();
+
+    const q = query(
+        colRef,
+        where("restaurantID", "==", uid)
+    );
+
+    unsubscribeReservations = onSnapshot(q, (snap) => {
+        const tbody = document.getElementById("tableBody");
+        if (!tbody) return; 
+
+        tbody.innerHTML = ""; 
+        
+        let bookings = [];
+        snap.forEach(docSnap => {
+            const d = docSnap.data();
+            d.id = docSnap.id;
+            bookings.push(d);
+        });
+
+        bookings.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+
+        if (typeof renderBookings === "function") {
+            renderBookings(bookings); 
+        }
+    }, (error) => {
+        console.error("Snapshot error:", error);
+        if (error.code === 'permission-denied') {
+            console.warn("settings to allow access");
+        }
+    });
+}
+
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+    signOut(auth).then(() => {
+        window.location.href = "login.html";
+    }).catch(err => console.error("Logout error:", err));
+});
+
+
+
+let allTables = [];  
+let TOTAL_SEATS = 0;
+const allTablesList = allTables; 
+const TOTAL_TABLES = allTables.length; 
+
+async function updateAvailableTablesInModal() {
+    const bookingId = document.getElementById("mId")?.value;
+    const date = document.getElementById("mDate")?.value;
+    const start = document.getElementById("mStartTime")?.value;
+    const end = document.getElementById("mEndTime")?.value;
+    const tableSelect = document.getElementById("mTable");
+    const currentTable = tableSelect.value;
+
+    if (!date || !start || !end) return;
+
+    const startDateTime = new Date(`${date}T${start}`);
+    const endDateTime = new Date(`${date}T${end}`);
+
+    const q = query(colRef, where("restaurantID", "==", auth.currentUser.uid));
+    const snap = await getDocs(q);
+    
+    let booked = [];
+    snap.forEach(docSnap => {
+        const d = docSnap.data();
+        if (docSnap.id === bookingId || d.status === "cancelled") return;
+
+        if (d.startTime && d.endTime) {
+            const existingStart = new Date(d.startTime);
+            const existingEnd = new Date(d.endTime);
+            if (startDateTime < existingEnd && endDateTime > existingStart) {
+                if (d.table) booked.push(d.table);
+            }
+        }
+    });
+
+    let available = (window.allTables || []).filter(t => !booked.includes(t));
+    
+    tableSelect.innerHTML = "";
+    tableSelect.disabled = false;
+
+    if (available.length === 0) {
+        tableSelect.innerHTML = '<option value="">No tables available at this time</option>';
+        tableSelect.disabled = true;
+    } else {
+        tableSelect.innerHTML = '<option value="">Select a table</option>';
+        available.forEach(t => {
+            const opt = new Option(t, t);
+            if (t == currentTable) opt.selected = true;
+            tableSelect.appendChild(opt);
+        });
+    }
+}
+const observer = new MutationObserver(() => {
+    if (document.getElementById("mId").value) {
+        updateAvailableTablesInModal();
+    }
+});
+
+const target = document.getElementById("mId");
+if (target) {
+    observer.observe(target, { attributes: true, childList: true, characterData: true, attributeFilter: ['value'] });
+}
+
+
+["mDate", "mStartTime", "mEndTime"].forEach(id => {
+    document.getElementById(id)?.addEventListener("change", updateAvailableTablesInModal);
+});
+document.getElementById("mDate").addEventListener("change", updateAvailableTablesInModal);
+document.getElementById("mStartTime").addEventListener("change", updateAvailableTablesInModal);
+document.getElementById("mEndTime").addEventListener("change", updateAvailableTablesInModal);
+
+function formatDate(dStr) {
+    if(!dStr) return "Not specified";
+    
+    const d = new Date(dStr);
+    
+
+    if (isNaN(d.getTime())) return "Invalid date";
+
+   const datePart = d.toLocaleDateString('en-GB', { 
+    day: '2-digit', 
+    month: 'short' 
+});
+
+const timePart = d.toLocaleTimeString('en-GB', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: true 
+});
+
+    return `${datePart} | ${timePart}`;
+}
+
+
+let unsubscribeMonitor = null;
+
+const startRealtimeMonitor = () => {
+    const tbody = document.getElementById("tableBody");
+    const sDateInput = document.getElementById("sDate");
+    const sPhoneInput = document.getElementById("sPhone");
+
+    if (unsubscribeMonitor) {
+        unsubscribeMonitor();
+        unsubscribeMonitor = null;
+    }
+
+    if (!auth.currentUser) return;
+    const q = query(colRef, where("restaurantID", "==", auth.currentUser.uid));
+
+
+    unsubscribeMonitor = onSnapshot(q, (snap) => {
+        const sDate = sDateInput.value;
+        const sPhone = sPhoneInput.value.trim();
+        const now = new Date();
+        
+        let bookings = [];
+        
+        snap.forEach(docSnap => {
+            const d = docSnap.data();
+            d.id = docSnap.id;
+
+           
+            let phoneNormalized = d.phone || "";
+            let matchesPhone = !sPhone || phoneNormalized.includes(sPhone);
+
+           
+            let matchesDate = true;
+            if (sDate && d.startTime) {
+                const resDate = d.startTime.split('T')[0];
+                matchesDate = resDate === sDate;
+            }
+
+            if(matchesPhone && matchesDate) {
+                d.sortValue = d.startTime ? new Date(d.startTime).getTime() : 9999999999999;
+                bookings.push(d);
+            }
+        });
+
+        bookings.sort((a, b) => a.sortValue - b.sortValue);
+
+        tbody.innerHTML = "";
+
+        if (bookings.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No reservations match your search</td></tr>`;
+            return;
+        }
+
+        bookings.forEach(d => {
+            const start = d.startTime ? new Date(d.startTime) : new Date();
+            const end = d.endTime ? new Date(d.endTime) : new Date(start.getTime() + 7200000);
+            
+            let rowClass = "future";
+            let colorHex = "#00b894"; 
+
+            if (d.status === "cancelled") {
+                rowClass = "cancelled";
+                colorHex = "#000000"; 
+            } else if (now > end) {
+                rowClass = "expired";
+                colorHex = "#d63031"; 
+            } else if (now >= start && now <= end) {
+                rowClass = "active";
+                colorHex = "#e17055"; 
+            }
+
+            const tr = document.createElement("tr");
+            tr.className = rowClass;
+            
+            tr.innerHTML = `
+                <td>
+                    <div class="status-badge" style="background:${colorHex}"></div>
+                    <canvas id="qr-${d.id}" class="qr-canvas" style="cursor:pointer; width:50px;" onclick="window.showQR('${d.id}')"></canvas>
+                </td>
+                <td style="text-align:left">
+                    <strong style="color:#fff">${d.firstName || ''} ${d.lastName || ''}</strong><br>
+                    <small style="color:#aaa">${d.phone || ''}</small>
+                </td>
+                <td><span style="background:#333; padding:2px 8px; border-radius:4px;">${d.people || 0}</span></td>
+                <td><b style="color:#ffa502">${d.table || 'N/A'}</b></td>
+                <td class="time-box">
+    <div style="font-weight:bold; color:#fff;">
+        ${start.toLocaleDateString('en-GB', {day:'2-digit', month:'short'})}
+    </div>
+
+    <div style="font-size:11px; color:#00ffcc;">
+        ${start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:true})}
+        <span style="color:#fff"> → </span>
+        ${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:true})}
+    </div>
+
+    <div style="font-size:12px; color:Green;">
+        ${(() => {
+            const diff = end - start;
+            const hours = Math.floor(diff / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+            return `Duration: ${hours}h ${mins}m`;
+        })()}
+    </div>
+</td>
+
+                <td>
+                    <div style="display:flex; gap:5px; justify-content:center;">
+                        <button onclick='window.openModal("${d.id}", ${JSON.stringify(d).replace(/'/g, "&apos;")})' 
+                            style="background:#ffc107; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;">Edit</button>
+                        
+                        <button onclick='window.deleteBooking("${d.id}")' 
+                            style="background:#ff4757; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;">cancel</button>
+                        
+                        ${d.status === "cancelled" ? `
+                            <button onclick="window.restoreBooking('${d.id}')" 
+                                style="background:#27ae60; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                                Restore
+                            </button>
+                        ` : ""}
+                    </div>
+                </td>
+                
+            `;
+            tbody.appendChild(tr);
+
+            if (d.qrData || d.id) {
+                setTimeout(() => {
+                    const canvas = document.getElementById(`qr-${d.id}`);
+                    if(canvas) QRCode.toCanvas(canvas, d.qrData || d.id, { width: 50, margin: 1 });
+                }, 0);
+            }
+        });
+    });
+};
+
+
+
+document.getElementById("sDate")?.addEventListener("input", () => {
+    if (auth.currentUser) startRealtimeMonitor();
+});
+
+document.getElementById("sPhone")?.addEventListener("input", () => {
+    if (auth.currentUser) startRealtimeMonitor();
+});
+
+
+function sortBookingsByOldestFirst(bookings) {
+    return bookings.sort((a, b) => {
+        const aTime = a.startTime ? new Date(a.startTime).getTime() : Number.MAX_SAFE_INTEGER;
+        const bTime = b.startTime ? new Date(b.startTime).getTime() : Number.MAX_SAFE_INTEGER;
+        return aTime - bTime;
+    });
+}
+
+window.loadData = async () => {
+    const tbody = document.getElementById("tableBody");
+    const sDate = document.getElementById("sDate").value;
+    const sPhone = document.getElementById("sPhone").value.trim();
+
+    tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px;'>Loading bookings...</td></tr>";
+    
+    try {
+        const q = query(colRef, where("restaurantID", "==", auth.currentUser.uid));
+        const snap = await getDocs(q);
+        
+        tbody.innerHTML = "";
+        const now = new Date();
+        let bookings = [];
+
+        snap.forEach(docSnap => {
+            const d = docSnap.data();
+            d.id = docSnap.id;
+
+
+            let phoneNum = d.phone || "";
+            let matchesPhone = !sPhone || phoneNum.includes(sPhone);
+
+
+            let matchesDate = true;
+            if (sDate && d.startTime) {
+ 
+                const bookingDate = d.startTime.split('T')[0];
+                matchesDate = bookingDate === sDate;
+            }
+
+            if(matchesPhone && matchesDate) {
+                const start = d.startTime ? new Date(d.startTime) : new Date();
+                const end = d.endTime ? new Date(d.endTime) : new Date(start.getTime() + 3600000);
+                const duration = Math.round((end - start) / 60000); 
+                bookings.push({...d, start, end, duration});
+            }
+        });
+
+
+        bookings.sort((a, b) => a.start - b.start || a.duration - b.duration);
+
+        if (bookings.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px;'>No bookings found matching your search.</td></tr>";
+            return;
+        }
+
+        bookings.forEach(d => {
+            let rowClass = "future";
+            let colorHex = "#00b894"; 
+
+            if (d.status === "cancelled") {
+                rowClass = "cancelled";
+                colorHex = "#000000"; 
+            } else if (now > d.end) {
+                rowClass = "expired";
+                colorHex = "#d63031"; 
+            } else if (now >= d.start && now <= d.end) {
+                rowClass = "active";
+                colorHex = "#e17055"; 
+            }
+
+            const tr = document.createElement("tr");
+            tr.className = rowClass;
+            
+            tr.innerHTML = `
+                <td>
+                    <div class="status-badge" style="background:${colorHex}"></div>
+                    <canvas id="qr-${d.id}" class="qr-canvas" style="cursor:pointer; width:50px; height:50px;" onclick="openQrModal('${d.id}')"></canvas>
+                </td>
+                <td style="text-align:left">
+                    <strong>${d.firstName || 'Guest'} ${d.lastName || ''}</strong><br>
+                    <small style="color:#888;">${d.phone || 'No Phone'}</small>
+                </td>
+                <td><strong>${d.people || 0}</strong></td>
+                <td><b style="color:#ffa502">${d.table || 'N/A'}</b></td>
+                <td class="time-box">
+    <div style="font-weight:bold; color:#fff;">
+        ${start.toLocaleDateString('en-GB', {day:'2-digit', month:'short'})}
+    </div>
+
+    <div style="font-size:11px; color:#00ffcc;">
+        ${start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:true})}
+        <span style="color:#fff"> → </span>
+        ${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:true})}
+    </div>
+
+    <div style="font-size:10px; color:#00b894; font-weight:bold;">
+        ${(() => {
+            const diff = end - start;
+            const hours = Math.floor(diff / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+            return `Duration: ${hours}h ${mins}m`;
+        })()}
+    </div>
+</td>
+
+<td class="time-box">
+    <div style="font-weight:bold; color:#fff;">
+        ${d.start.toLocaleDateString('en-GB', { day:'2-digit', month:'short' })}
+    </div>
+
+    <div style="font-size:12px; color:#00ffcc;">
+        ${d.start.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12:true })}
+        <span style="color:#fff"> → </span>
+        ${d.end.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12:true })}
+    </div>
+    
+    <div style="font-size: 10px; color: #00b894; margin-top: 4px; font-weight: bold;">
+        Duration: ${d.duration} mins
+    </div>
+</td>
+                
+            `;
+            tbody.appendChild(tr);
+
+            if(d.qrData || d.id) {
+                setTimeout(() => {
+                    const canvas = document.getElementById(`qr-${d.id}`);
+                    if(canvas) {
+                        QRCode.toCanvas(canvas, d.qrData || d.id, { 
+                            width: 50, 
+                            margin: 1,
+                            color: { dark: "#000000", light: "#ffffff" }
+                        });
+                    }
+                }, 50);
+            }
+        });
+    } catch (error) {
+        console.error("Error loading data:", error);
+        tbody.innerHTML = "<tr><td colspan='6' style='color:red;'>Failed to load data. Please try again.</td></tr>";
+    }
+};
+
+
+window.showFreeSlots = async () => {
+    let sDate = document.getElementById("sDate").value;
+    if (!sDate) {
+        sDate = new Date().toISOString().split('T')[0];
+    }
+
+    const container = document.getElementById("freeSlotsContainer");
+    const list = document.getElementById("freeSlotsList");
+    
+    container.style.display = "block";
+    list.innerHTML = "<p style='color:#ffa502;'>Checking availability...</p>";
+
+    try {
+        const q = query(colRef, where("restaurantID", "==", auth.currentUser.uid));
+        const snap = await getDocs(q);
+        
+        
+        const hours = ["12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
+        let html = "";
+        const now = new Date();
+
+        hours.forEach(time => {
+            let occupied = 0;
+            const targetTime = new Date(`${sDate}T${time}`);
+
+            
+            if (targetTime < now && sDate === now.toISOString().split('T')[0]) {
+                return; 
+            }
+
+            
+            snap.forEach(docSnap => {
+                const d = docSnap.data();
+                if (d.status !== "cancelled" && d.startTime && d.endTime) {
+                    const start = new Date(d.startTime);
+                    const end = new Date(d.endTime);
+                    if (targetTime >= start && targetTime < end) {
+                        occupied++;
+                    }
+                }
+            });
+
+            
+            const totalTables = 20; 
+            const free = totalTables - occupied;
+
+            if (free > 0) {
+                html += `
+                    <div style="background:#2a2a35; padding:15px; border-radius:10px; border-top: 4px solid #00b894; text-align:center; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                        <div style="font-weight:bold; font-size:18px; color:#fff;">${time}</div>
+                        <div style="font-size:13px; color:#00b894; margin-top:5px;">${free} Tables Available</div>
+                        <button onclick="document.getElementById('mStartTime').value='${sDate}T${time}'; openModal();" 
+                                style="margin-top:10px; background:transparent; border:1px solid #00b894; color:#00b894; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">
+                            Book Now
+                        </button>
+                    </div>
+                `;
+            }
+        });
+
+        if (html === "") {
+            list.innerHTML = "<p style='color:#ff4d4d; grid-column: 1/-1; text-align:center;'>Sorry, no tables available for the selected date.</p>";
+        } else {
+            list.innerHTML = `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:15px; width:100%;">${html}</div>`;
+        }
+    } catch (error) {
+        console.error("Error checking slots:", error);
+        list.innerHTML = "<p style='color:red;'>Error loading availability.</p>";
+    }
+};
+function formatDateForInput(dateStr) {
+    if (!dateStr) return "";
+    
+  
+    if (dateStr.includes('T')) {
+        return dateStr.split('T')[0]; 
+    }
+
+
+    if (dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+            const [day, month, year] = parts;
+            return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}`;
+        }
+    }
+
+
+    return dateStr;
+}
+window.openEditModal = (id, date, startTime, endTime, people, table) => {
+    document.getElementById("mId").value = id;
+
+    document.getElementById("mDate").value = formatDateForInput(date);
+
+    const start = startTime && startTime.includes('T') ? startTime.split('T')[1].substring(0, 5) : "";
+    const end = endTime && endTime.includes('T') ? endTime.split('T')[1].substring(0, 5) : "";
+
+    document.getElementById("mStartTime").value = start;
+    document.getElementById("mEndTime").value = end;
+
+    document.getElementById("mPeople").value = people || "";
+    document.getElementById("mTable").value = table || "";
+
+    document.getElementById("editModal").style.display = "flex";
+};
+
+
+
+window.openModal = (id, data) => {
+    document.getElementById("mId").value = id;
+
+    
+    document.getElementById("mDate").value = data.date || "";
+    document.getElementById("mPeople").value = data.people || "";
+    document.getElementById("mTable").value = data.table || "";
+
+    if (data.startTime) {
+        const sTime = data.startTime.includes('T') ? data.startTime.split('T')[1].substring(0, 5) : "";
+        document.getElementById("mStartTime").value = sTime;
+    } else {
+        document.getElementById("mStartTime").value = "";
+    }
+
+    if (data.endTime) {
+        const eTime = data.endTime.includes('T') ? data.endTime.split('T')[1].substring(0, 5) : "";
+        document.getElementById("mEndTime").value = eTime;
+    } else {
+        document.getElementById("mEndTime").value = "";
+    }
+
+    document.getElementById("editModal").style.display = "flex";
+};
+window.closeModal = () => {
+    const modal = document.getElementById("editModal");
+    modal.style.display = "none";
+    const mId = document.getElementById("mId");
+    if (mId) mId.value = "";
+};
+
+window.clearSearch = () => {
+    const sDate = document.getElementById("sDate");
+    const sPhone = document.getElementById("sPhone");
+
+    if (sDate) sDate.value = "";
+    if (sPhone) sPhone.value = "";
+
+    console.log("Filters cleared. Refreshing data...");
+
+
+    if (typeof startRealtimeMonitor === "function") {
+        startRealtimeMonitor();
+    } else {
+    }
+};
+
+window.restoreBooking = async (id) => {
+    try {
+     
+        const bookingRef = doc(db, "reservations", id);
+        const bookingSnap = await getDoc(bookingRef);
+
+        if (!bookingSnap.exists()) {
+            Swal.fire('Error', 'Order not found!', 'error');
+            return;
+        }
+
+        const bookingData = bookingSnap.data();
+        const startDT = new Date(bookingData.startTime);
+        const endDT = new Date(bookingData.endTime);
+        const tableNum = bookingData.table;
+
+     
+        const q = query(colRef, where("restaurantID", "==", auth.currentUser.uid));
+        const querySnapshot = await getDocs(q);
+        let hasConflict = false;
+
+        querySnapshot.forEach((docSnap) => {
+            const d = docSnap.data();
+            
+            if (d.status !== "cancelled" && docSnap.id !== id && d.table === tableNum) {
+                const existingStart = new Date(d.startTime);
+                const existingEnd = new Date(d.endTime);
+
+               
+                if (startDT < existingEnd && endDT > existingStart) {
+                    hasConflict = true;
+                }
+            }
+        });
+
+      
+        if (hasConflict) {
+            Swal.fire({
+                title: 'Restoration Failed',
+                text: `Table ${tableNum} is already booked during this time slot.`,
+                icon: 'error',
+                background: '#1e1e26',
+                color: '#fff'
+            });
+            return;
+        }
+
+        
+        const result = await Swal.fire({
+            title: 'Restore Order?',
+            text: "This will move the order back to the active list.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#00b894',
+            cancelButtonColor: '#d63031',
+            confirmButtonText: 'Yes, Restore it!'
+        });
+
+        if (result.isConfirmed) {
+            await updateDoc(bookingRef, { status: "confirmed" });
+            Swal.fire({
+                title: 'Restored!',
+                text: 'Order is now active again.',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+           
+            startRealtimeMonitor();
+        }
+
+    } catch (error) {
+        console.error("Error during restoration:", error);
+        Swal.fire('Error', 'Something went wrong', 'error');
+    }
+};
+
+window.deleteBooking = async (id) => {
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "This will mark the reservation as cancelled!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, cancel it!',
+        background: '#1e1e26',
+        color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const docRef = doc(db, "reservations", id);
+            await updateDoc(docRef, {
+                status: "cancelled"
+            });
+            
+            Swal.fire({
+                title: 'Cancelled!',
+                text: 'Reservation status updated to black.',
+                icon: 'success',
+                background: '#1e1e26',
+                color: '#fff'
+            });
+            
+          
+        } catch (error) {
+            console.error("Error cancelling reservation:", error);
+            Swal.fire('Error!', 'Something went wrong.', 'error');
+        }
+    }
+};
+
+window.showQR = async (id) => {
+    const canvas = document.getElementById(`qr-${id}`);
+    
+    if (!canvas) {
+        console.error("Canvas not found for ID:", id);
+        return;
+    }
+
+    try {
+        const dataUrl = canvas.toDataURL("image/png");
+        const row = canvas.closest('tr');
+        const clientName = row?.querySelector('strong')?.innerText || "Guest";
+
+        Swal.fire({
+            title: `<span style="color: #fff; font-size: 22px;">Reservation QR Code</span>`,
+            html: `
+                <div style="text-align: center; padding: 10px;">
+                    <p style="color: #00cec9; margin-bottom: 15px;">Client: ${clientName}</p>
+                    <div style="background: white; padding: 15px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                        <img src="${dataUrl}" style="width: 200px; height: 200px; display: block;" id="swal-qr-image">
+                    </div>
+                    <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+                        <button id="btn-download" class="swal2-confirm swal2-styled" style="background:#00b894; margin:0; border-radius:10px;">Download QR</button>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="btn-copy" class="swal2-confirm swal2-styled" style="flex:1; background:#3742fa; margin:0; border-radius:10px;">Copy</button>
+                            <button id="btn-share" class="swal2-confirm swal2-styled" style="flex:1; background:#e17055; margin:0; border-radius:10px;">Share</button>
+                        </div>
+                    </div>
+                </div>
+            `,
+            background: '#1e1e26',
+            showConfirmButton: false,
+            showCloseButton: true,
+            didOpen: () => {
+                const getBlob = async () => {
+                    const res = await fetch(dataUrl);
+                    return await res.blob();
+                };
+
+             
+                document.getElementById('btn-download').onclick = () => {
+                    const link = document.createElement('a');
+                    link.download = `QR-${clientName}.png`;
+                    link.href = dataUrl;
+                    link.click();
+                };
+
+            
+                document.getElementById('btn-copy').onclick = async () => {
+                    try {
+                        const blob = await getBlob();
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ "image/png": blob })
+                        ]);
+                        Swal.showValidationMessage('Copied');
+                        setTimeout(() => Swal.resetValidationMessage(), 2000);
+                    } catch (err) {
+                        alert("Copy failed. Make sure you are using HTTPS.");
+                    }
+                };
+
+           
+                document.getElementById('btn-share').onclick = async () => {
+                    if (navigator.share) {
+                        try {
+                            const blob = await getBlob();
+                            const file = new File([blob], 'qr-code.png', { type: 'image/png' });
+                            await navigator.share({
+                                files: [file],
+                                title: 'Reservation QR',
+                                text: `QR Code for ${clientName}`
+                            });
+                        } catch (err) {
+                            console.log("Share failed or cancelled");
+                        }
+                    } else {
+                        alert("Sharing is not supported on this browser.");
+                    }
+                };
+            }
+        });
+    } catch (error) {
+        console.error("Error opening QR:", error);
+    }
+};
+function generateDynamicTimes(openTime, closeTime) {
+    const startSelect = document.getElementById("checkStartTime");
+    const endSelect = document.getElementById("checkEndTime");
+    const mStart = document.getElementById("mStartTime");
+    const mEnd = document.getElementById("mEndTime");
+
+    let [openH, openM] = openTime.split(":").map(Number);
+    let [closeH, closeM] = closeTime.split(":").map(Number);
+
+    let startTotalMin = openH * 60 + openM;
+    let endTotalMin = closeH * 60 + closeM;
+
+
+    if (endTotalMin <= startTotalMin) {
+        endTotalMin += 1440;
+    }
+
+    let optionsHTML = "";
+
+    for (let time = startTotalMin; time <= endTotalMin; time += 15) {
+        let currentTotalH = Math.floor(time / 60);
+        let mm = time % 60;
+        
+
+        let realH = currentTotalH % 24;
+        let val = `${String(realH).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+
+        let displayH = realH % 12 || 12;
+        let ampm = (currentTotalH % 24) >= 12 ? "PM" : "AM";
+        
+
+        if (currentTotalH >= 24) {
+            ampm = "AM"; 
+        }
+
+        let label = `${String(displayH).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${ampm}`;
+        optionsHTML += `<option value="${val}">${label}</option>`;
+    }
+
+
+    [startSelect, endSelect, mStart, mEnd].forEach(select => {
+        if (select) select.innerHTML = optionsHTML;
+    });
+}
+
+window.updateBooking = async () => {
+  
+    const currentRestaurantID = auth.currentUser ? auth.currentUser.uid : null;
+    
+    if (!currentRestaurantID) {
+        Swal.fire("Error", "You must be logged in", "error");
+        return;
+    }
+
+    const id = document.getElementById("mId").value;
+    const date = document.getElementById("mDate").value;
+    const start = document.getElementById("mStartTime").value;
+    const end = document.getElementById("mEndTime").value; 
+    const people = document.getElementById("mPeople").value;
+    const table = document.getElementById("mTable").value;
+
+    if (!id || !date || !start || !end) {
+        Swal.fire("Error", "Please fill Date and Time fields", "error");
+        return;
+    }
+
+    const newStartStr = `${date}T${start}`;
+    const newEndStr = `${date}T${end}`;
+    const newStartNum = new Date(newStartStr).getTime();
+    const newEndNum = new Date(newEndStr).getTime();
+
+    try {
+       
+        const colRef = collection(db, "reservations");
+        const q = query(colRef, where("restaurantID", "==", currentRestaurantID));
+        const querySnapshot = await getDocs(q);
+
+        let conflict = false;
+
+        querySnapshot.forEach((docSnap) => {
+            const d = docSnap.data();
+            
+           
+            if (docSnap.id !== id && d.status !== "cancelled" && d.table === table) {
+                const exStart = new Date(d.startTime).getTime();
+                const exEnd = new Date(d.endTime).getTime();
+
+                if (newStartNum < exEnd && newEndNum > exStart) {
+                    conflict = true;
+                }
+            }
+        });
+
+        if (conflict) {
+            Swal.fire({
+                title: "Table Occupied",
+                text: `Table ${table} is already booked for this time.`,
+                icon: "error",
+                background: '#1e1e26',
+                color: '#fff'
+            });
+            return;
+        }
+
+
+        const docRef = doc(db, "reservations", id);
+        await updateDoc(docRef, {
+            date: date,
+            startTime: newStartStr,
+            endTime: newEndStr, 
+            people: Number(people),
+            table: table,
+            restaurantID: currentRestaurantID 
+        });
+
+        Swal.fire({
+            title: "Success",
+            text: "Reservation updated successfully",
+            icon: "success",
+            timer: 1500,
+            showConfirmButton: false
+        });
+        
+        closeModal();
+        if (typeof startRealtimeMonitor === "function") startRealtimeMonitor(currentRestaurantID);
+
+    } catch (e) {
+        console.error("Update error details:", e);
+        Swal.fire("Error", "Update failed: " + e.message, "error");
+    }
+};
+ 
+
+
+function generateCheckTimes() {
+    const startSelect = document.getElementById("checkStartTime");
+    const endSelect = document.getElementById("checkEndTime");
+
+    if (!startSelect || !endSelect) return;
+
+    const dayStartMin = 11 * 60 + 15; 
+    const dayEndMin = 23 * 60 + 45;   
+
+    const createOption = (total) => {
+        let hh = Math.floor(total / 60);
+        let mm = total % 60;
+        let hour12 = hh % 12 || 12;
+        let ampm = hh < 12 ? "AM" : "PM";
+        
+        const option = document.createElement("option");
+        option.value = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+        option.textContent = `${hour12}:${String(mm).padStart(2, '0')} ${ampm}`;
+        return option;
+    };
+
+
+    startSelect.innerHTML = "";
+    for (let total = dayStartMin; total <= dayEndMin; total += 15) {
+        startSelect.appendChild(createOption(total));
+    }
+
+    const updateEndOptions = () => {
+        const start = startSelect.value;
+        if (!start) return;
+
+        const [h, m] = start.split(":").map(Number);
+        const startTotal = h * 60 + m;
+        const defaultEndTotal = startTotal + 60; 
+
+        endSelect.innerHTML = "";
+        
+        
+        for (let total = startTotal + 15; total <= dayEndMin + 60; total += 15) {
+            endSelect.appendChild(createOption(total));
+        }
+
+        
+        const defaultVal = `${String(Math.floor(defaultEndTotal / 60)).padStart(2, '0')}:${String(defaultEndTotal % 60).padStart(2, '0')}`;
+        if ([...endSelect.options].some(opt => opt.value === defaultVal)) {
+            endSelect.value = defaultVal;
+        }
+    };
+
+    
+    startSelect.onchange = updateEndOptions;
+
+    
+    updateEndOptions();
+}
+
+
+generateCheckTimes();
+
+
+window.checkAvailability = async () => {
+    
+    const cDate = document.getElementById("checkDate").value;
+    const cStart = document.getElementById("checkStartTime").value;
+    const cEnd = document.getElementById("checkEndTime").value;
+    const resultDiv = document.getElementById("availabilitySummary");
+
+    
+    if (!cDate || !cStart || !cEnd) {
+        Swal.fire("Attention", "Please select Date, Start and End time first!", "warning");
+        return;
+    }
+
+   
+    resultDiv.innerHTML = `<p style="color: #ffa502; text-align: center;">Checking availability...</p>`;
+
+    try {
+        const targetStart = new Date(`${cDate}T${cStart}`);
+        const targetEnd = new Date(`${cDate}T${cEnd}`);
+        
+        
+        const q = query(colRef, where("restaurantID", "==", auth.currentUser.uid));
+        const snap = await getDocs(q);
+        
+        let bookedTables = new Set(); 
+        let occupiedSeats = 0;
+
+        snap.forEach(docSnap => {
+            const d = docSnap.data();
+            
+           
+            if (d.status !== "cancelled" && d.startTime && d.endTime) {
+                const resStart = new Date(d.startTime);
+                const resEnd = new Date(d.endTime);
+
+                if (targetStart < resEnd && targetEnd > resStart) {
+                    if (d.table) bookedTables.add(d.table);
+                    occupiedSeats += Number(d.people || 0);
+                }
+            }
+        });
+
+        const totalTablesCount = (window.allTables && window.allTables.length > 0) ? window.allTables.length : 0;
+        const totalSeatsCount = window.TOTAL_SEATS || 0;
+        
+        const freeTables = Math.max(0, totalTablesCount - bookedTables.size);
+        const freeSeats = Math.max(0, totalSeatsCount - occupiedSeats);
+
+        
+        resultDiv.innerHTML = `
+            <div style="background: #16161d; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; display: flex; gap: 20px; align-items: center; justify-content: center; max-width: 500px; margin: 0 auto; direction: ltr;">
+                <div style="text-align: center;">
+                    <span style="color: #888; font-size: 11px; display: block; text-transform: uppercase; margin-bottom: 5px;">Available Tables</span>
+                    <strong style="color: #00ffcc; font-size: 20px;">${freeTables} <small style="color: #555; font-size: 12px;">of ${totalTablesCount}</small></strong>
+                </div>
+                <div style="width: 1px; height: 40px; background: #333;"></div>
+                <div style="text-align: center;">
+                    <span style="color: #888; font-size: 11px; display: block; text-transform: uppercase; margin-bottom: 5px;">Available Seats</span>
+                    <strong style="color: #ffa502; font-size: 20px;">${freeSeats} <small style="color: #555; font-size: 12px;">of ${totalSeatsCount}</small></strong>
+                </div>
+            </div>
+        `;
+
+    } catch (error) {
+        console.error("Error checking availability:", error);
+        resultDiv.innerHTML = `<p style="color: red; text-align: center;">Failed to load data. Please try again.</p>`;
+    }
+};
+
+window.filterStatus = (status) => {
+    const rows = document.querySelectorAll("#tableBody tr");
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        let isVisible = false;
+
+        if (status === 'all') {
+            isVisible = true;
+        } else if (status === 'active') {
+            
+            isVisible = row.classList.contains('active') || row.classList.contains('future');
+        } else if (status === 'expired') {
+            isVisible = row.classList.contains('expired');
+        } else if (status === 'cancelled') {
+            isVisible = row.classList.contains('cancelled');
+        }
+
+        row.style.display = isVisible ? "" : "none";
+        if (isVisible) visibleCount++;
+    });
+
+    if (visibleCount === 0 && rows.length > 0) {
+        console.log(`No ${status} bookings found.`);
+    }
+};
+
+const formatAMPM = (timeInput) => {
+    if (!timeInput) return "N/A";
+
+    let hours, minutes;
+
+    
+    if (timeInput.includes('T')) {
+        const timePart = timeInput.split('T')[1];
+        [hours, minutes] = timePart.split(':');
+    } else {
+        [hours, minutes] = timeInput.split(':');
+    }
+
+    let hh = parseInt(hours);
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    hh = hh % 12 || 12; 
+    
+    return `${hh}:${String(minutes).padStart(2, '0')} ${ampm}`;
+};
+
+
+
+window.showFreeSlots = async () => {
+    let sDate = document.getElementById("sDate").value;
+    if (!sDate) {
+        sDate = new Date().toISOString().split('T')[0];
+    }
+
+    const modalContent = document.getElementById("modalContent");
+    const modalTitle = document.getElementById("modalTitle");
+    
+    modalTitle.innerText = `Table Schedule for ${sDate}`;
+    modalContent.innerHTML = "<p style='text-align:center;'>Analyzing table schedules...</p>";
+
+    const formatAMPM = (timeStr) => {
+        if (!timeStr) return "";
+        let [hours, minutes] = timeStr.split(':');
+        let ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; 
+        return hours + ':' + minutes + ' ' + ampm;
+    };
+
+    try {
+        const q = query(colRef, where("restaurantID", "==", auth.currentUser.uid));
+        const snap = await getDocs(q);
+        
+        
+        const dayStart = window.openTime || "11:00";
+        const dayEnd = window.closeTime || "23:59";
+        
+        
+        const allTables = window.allTables || [];
+        
+        if (allTables.length === 0) {
+            modalContent.innerHTML = "<p style='color:red; text-align:center;'>No tables found in settings!</p>";
+            return;
+        }
+
+        const tableBookingsMap = {};
+        snap.forEach(docSnap => {
+            const d = docSnap.data();
+            if (d.status !== "cancelled" && d.startTime && d.startTime.startsWith(sDate)) {
+                const startT = d.startTime.split('T')[1].substring(0, 5);
+                const endT = d.endTime.split('T')[1].substring(0, 5);
+                
+                if (!tableBookingsMap[d.table]) tableBookingsMap[d.table] = [];
+                tableBookingsMap[d.table].push({ start: startT, end: endT });
+            }
+        });
+
+        let htmlOutput = ""; 
+
+        allTables.forEach((tableName) => {
+            let bookings = tableBookingsMap[tableName] || [];
+            bookings.sort((a, b) => a.start.localeCompare(b.start));
+
+            htmlOutput += `
+                <div style="background:#fff; padding:15px; border-radius:10px; margin-bottom:15px; border-left: 8px solid #2d3436; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="font-size:1.1em; color:#2d3436;">TABLE ${tableName}</strong>
+                        <span style="font-size:10px; color:#aaa;">Schedule</span>
+                    </div>
+                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">`;
+
+            let currentTime = dayStart;
+
+            if (bookings.length === 0) {
+                htmlOutput += `<div style="color:#2ecc71; font-weight:bold; padding:5px 0;">🟢 ${formatAMPM(dayStart)} - ${formatAMPM(dayEnd)} (Available)</div>`;
+            } else {
+                bookings.forEach(b => {
+                    if (b.start > currentTime) {
+                        htmlOutput += `<div style="color:#2ecc71; font-size:13px; font-weight:bold; margin:3px 0;">🟢 ${formatAMPM(currentTime)} - ${formatAMPM(b.start)} (Free)</div>`;
+                    }
+                    htmlOutput += `
+                        <div style="color:#fff; background:#e74c3c; font-size:13px; font-weight:bold; padding:6px 12px; margin:5px 0; border-radius:6px; display:inline-block; border-left:3px solid #c0392b;">
+                            🔴 ${formatAMPM(b.start)} - ${formatAMPM(b.end)} (Booked)
+                        </div><br>`;
+                    currentTime = b.end;
+                });
+
+                if (currentTime < dayEnd) {
+                    htmlOutput += `<div style="color:#2ecc71; font-size:13px; font-weight:bold; margin:3px 0;">🟢 ${formatAMPM(currentTime)} - ${formatAMPM(dayEnd)} (Free)</div>`;
+                }
+            }
+            htmlOutput += `</div>`;
+        });
+
+        modalContent.innerHTML = htmlOutput;
+        document.getElementById('statusModal').style.display = 'block';
+
+    } catch (error) {
+        console.error("Schedule View Error:", error);
+        modalContent.innerHTML = `<p style='color:red; text-align:center;'>Error: ${error.message}</p>`;
+    }
+};
+let currentQrDataUrl = ""; 
+
+
+
+window.openQrModal = (id) => {
+    const canvas = document.getElementById(`qr-${id}`);
+    
+    if (!canvas) {
+        console.error(`Canvas with ID qr-${id} not found.`);
+        return;
+    }
+
+    const row = canvas.closest('tr');
+    const clientName = row?.querySelector('strong')?.innerText || "Guest";
+    const dataUrl = canvas.toDataURL("image/png");
+
+    Swal.fire({
+        title: `<span style="color: #fff; font-size: 22px;">Reservation QR Code</span>`,
+        html: `
+            <div style="text-align: center; padding: 10px;">
+                <p style="color: #00cec9; margin-bottom: 15px;">Client: ${clientName}</p>
+                <div style="background: white; padding: 15px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                    <img src="${dataUrl}" style="width: 200px; height: 200px; display: block;" id="swal-qr-image">
+                </div>
+                <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+                    <button id="btn-download" class="swal2-confirm swal2-styled" style="background:#00b894; margin:0; border-radius:10px;">Download QR</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btn-copy" class="swal2-confirm swal2-styled" style="flex:1; background:#3742fa; margin:0; border-radius:10px;">Copy</button>
+                        <button id="btn-share" class="swal2-confirm swal2-styled" style="flex:1; background:#e17055; margin:0; border-radius:10px;">Share</button>
+                    </div>
+                </div>
+            </div>
+        `,
+        background: '#1e1e26',
+        showConfirmButton: false,
+        showCloseButton: true,
+        didOpen: () => {
+        
+            document.getElementById('btn-download').onclick = () => {
+                const link = document.createElement('a');
+                link.download = `QR-${clientName.replace(/\s+/g, '_')}.png`;
+                link.href = dataUrl;
+                link.click();
+            };
+
+            
+            document.getElementById('btn-copy').onclick = async () => {
+                if (!navigator.clipboard || !window.isSecureContext) {
+                    return Swal.showValidationMessage('Copy requires HTTPS connection');
+                }
+                try {
+                    const response = await fetch(dataUrl);
+                    const blob = await response.blob();
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ "image/png": blob })
+                    ]);
+                    Swal.showValidationMessage('Copied');
+                    setTimeout(() => Swal.resetValidationMessage(), 2000);
+                } catch (err) {
+                    console.error(err);
+                    alert("Copy failed.");
+                }
+            };
+
+            
+            document.getElementById('btn-share').onclick = async () => {
+                if (navigator.share && window.isSecureContext) {
+                    try {
+                        const response = await fetch(dataUrl);
+                        const blob = await response.blob();
+                        const file = new File([blob], 'qr.png', { type: 'image/png' });
+                        await navigator.share({ files: [file], title: 'Reservation QR' });
+                    } catch (err) {
+                        console.log("Share cancelled or failed");
+                    }
+                } else {
+                    alert("Sharing is not supported on this browser/connection.");
+                }
+            };
+        }
+    });
+};
+
+window.filterStatus = (status) => {
+    const rows = document.querySelectorAll("#tableBody tr");
+    rows.forEach(row => {
+        if (status === 'all') {
+            row.style.display = "";
+        } else if (status === 'now') {
+            row.style.display = row.classList.contains('active') ? "" : "none";
+        } else if (status === 'future') {
+           
+            row.style.display = row.classList.contains('future') ? "" : "none";
+        } else if (status === 'past') {
+            
+            row.style.display = row.classList.contains('expired') ? "" : "none";
+        } else if (status === 'deleted') {
+            row.style.display = row.classList.contains('cancelled') ? "" : "none";
+        }
+    });
+};
+
+window.checkAvailability = async function () {
+
+    const TOTAL_TABLES = (window.allTables ? window.allTables.length : 0) || 0;
+    const TOTAL_SEATS = Number(window.TOTAL_SEATS || 0);
+
+    const date = document.getElementById("checkDate").value;
+    const start = document.getElementById("checkStartTime").value;
+    const end = document.getElementById("checkEndTime").value;
+
+    const formatAMPM = (timeString) => {
+        if (!timeString) return "";
+        let [hours, minutes] = timeString.split(':');
+        let ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        return `${hours}:${minutes} ${ampm}`;
+    };
+
+
+    if (!date || !start || !end) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Missing Information',
+            text: 'Please select a date, start time, and end time.',
+            background: '#1e1e26',
+            color: '#fff'
+        });
+        return;
+    }
+
+    Swal.showLoading();
+
+    try {
+
+        const startDT = new Date(`${date}T${start}:00`);
+        const endDT = new Date(`${date}T${end}:00`);
+
+        const q = query(colRef, where("restaurantID", "==", auth.currentUser.uid));
+        const snap = await getDocs(q);
+
+        let occupiedTables = 0;
+        let occupiedSeats = 0;
+
+        snap.forEach(docSnap => {
+            const d = docSnap.data();
+
+            if (d.status === "cancelled") return;
+            if (!d.startTime || !d.endTime) return;
+
+
+            const existingStart = d.startTime.toDate
+                ? d.startTime.toDate()
+                : new Date(d.startTime);
+
+            const existingEnd = d.endTime.toDate
+                ? d.endTime.toDate()
+                : new Date(d.endTime);
+
+
+            const isOverlapping =
+                startDT < existingEnd && endDT > existingStart;
+
+            if (isOverlapping) {
+
+
+                if (Array.isArray(d.table)) {
+                    occupiedTables += d.table.length;
+                } else if (d.table) {
+                    occupiedTables += 1;
+                }
+
+                occupiedSeats += Number(d.people || d.seats || 0);
+            }
+        });
+
+        const freeTables = Math.max(0, TOTAL_TABLES - occupiedTables);
+        const freeSeats = Math.max(0, TOTAL_SEATS - occupiedSeats);
+
+
+        Swal.fire({
+            title: `<span style="color: #00cec9;">Availability Results</span>`,
+            background: '#1e1e26',
+            html: `
+                <div style="color: #fff; text-align: left; padding: 10px; font-family: sans-serif;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px;">
+                        <span>Available Tables 🍽️:</span>
+                        <b style="color: #00b894; font-size: 1.2em;">${freeTables} / ${TOTAL_TABLES}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Available Chairs 🪑:</span>
+                        <b style="color: #e17055; font-size: 1.2em;">${freeSeats} / ${TOTAL_SEATS}</b>
+                    </div>
+                    <p style="font-size: 0.9em; color: #888; margin-top: 15px; text-align: center; background: #2a2a35; padding: 10px; border-radius: 8px;">
+                        Checking overlap for: <br> 
+                        <span style="color: #fff;">${formatAMPM(start)} to ${formatAMPM(end)}</span>
+                    </p>
+                </div>
+            `,
+            showConfirmButton: true,
+            confirmButtonText: 'Got it',
+            confirmButtonColor: '#00b894'
+        });
+
+    } catch (error) {
+        console.error("Check Error:", error);
+        Swal.fire("Error", "Could not fetch data. Try again.", "error");
+    }
+};
+
+  function getKeyInfo(e){
+    return {
+      key: (e.key || '').toLowerCase(),
+      code: (e.code || '').toLowerCase(),
+      keyCode: e.keyCode || e.which || 0,
+      ctrl: e.ctrlKey || false,
+      shift: e.shiftKey || false,
+      alt: e.altKey || false,
+      meta: e.metaKey || false
+    };
+  }
+
+  function handleKeydown(e){
+    const k = getKeyInfo(e);
+
+    const K = { F12: 123, U: 85, S: 83, I: 73, J: 74, C: 67, K: 75, P: 80, M: 77 };
+
+    const isF12 = (k.keyCode === K.F12) || k.key === 'f12' || k.code === 'f12';
+    const isCtrlU = (k.ctrl || k.meta) && (k.key === 'u' || k.keyCode === K.U);
+    const isCtrlS = (k.ctrl || k.meta) && (k.key === 's' || k.keyCode === K.S);
+    const isCtrlShiftI = (k.ctrl || k.meta) && k.shift && (k.key === 'i' || k.keyCode === K.I);
+    const isCtrlShiftJ = (k.ctrl || k.meta) && k.shift && (k.key === 'j' || k.keyCode === K.J);
+    const isCtrlShiftC = (k.ctrl || k.meta) && k.shift && (k.key === 'c' || k.keyCode === K.C);
+    const isCtrlShiftK = (k.ctrl || k.meta) && k.shift && (k.key === 'k' || k.keyCode === K.K);
+    const isCtrlShiftP = (k.ctrl || k.meta) && k.shift && (k.key === 'p' || k.keyCode === K.P);
+    const isCtrlShiftM = (k.ctrl || k.meta) && k.shift && (k.key === 'm' || k.keyCode === K.M);
+
+    if(isF12 || isCtrlU || isCtrlS || isCtrlShiftI || isCtrlShiftJ || isCtrlShiftC || isCtrlShiftK || isCtrlShiftP || isCtrlShiftM){
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+
+    if(k.keyCode === 93 || k.key === 'contextmenu' || k.code === 'contextmenu'){
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+
+  document.addEventListener('keydown', handleKeydown, true);
+
+  document.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+  }, true);
+
+
+  function detectByWindowSize(){
+    try{
+      const wDiff = Math.abs((window.outerWidth || 0) - (window.innerWidth || 0));
+      const hDiff = Math.abs((window.outerHeight || 0) - (window.innerHeight || 0));
+      return (wDiff > threshold) || (hDiff > threshold);
+    }catch(e){
+      return false;
+    }
+  }
+
+  const _detector = new Image();
+  Object.defineProperty(_detector, 'id', {
+    get: function(){
+      try{ createOverlay(); devtoolsOpen = true; }catch(e){}
+      return 'detector';
+    }
+  });
+
+  function checkDevTools(){
+    let detected = false;
+    if(detectByWindowSize()) detected = true;
+    try{ console.log(_detector); }catch(e){}
+    if(detected && !devtoolsOpen){
+      devtoolsOpen = true;
+      createOverlay();
+      console.warn('DevTools detected — overlay enabled.');
+    } else if(!detected && devtoolsOpen){
+      devtoolsOpen = false;
+      removeOverlay();
+    }
+  }
+
+  const intervalId = setInterval(checkDevTools, 1000);
+  window.addEventListener('resize', checkDevTools);
+
+  document.addEventListener('keydown', function(e){
+    const k = getKeyInfo(e);
+    if((k.ctrl || k.meta) && k.key === 'u'){ e.preventDefault(); e.stopPropagation(); return false; }
+  }, true);
+
+  try{ console.info('Page protections (silent) enabled.'); }catch(e){}
+
+</script>
+</body>
+</html>

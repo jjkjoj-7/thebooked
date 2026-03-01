@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Table Reservation</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@19.2.16/build/css/intlTelInput.css">
+
+
+
+
+<style>
+  
+* { 
+  box-sizing: border-box; 
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+}
+body { 
+  min-height:100vh; 
+  background: linear-gradient(135deg,#0f2027,#203a43,#2c5364); 
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+  padding:20px;
+}
+.form-box { 
+  width:420px; 
+  background:rgba(255,255,255,0.95); 
+  padding:28px; 
+  border-radius:18px; 
+  box-shadow:0 20px 40px rgba(0,0,0,0.25);
+  position: relative;
+}
+h2 { 
+  text-align:center; 
+  margin-bottom:22px; 
+  color:#203a43; 
+  font-weight:700; 
+}
+input, select, textarea { 
+  width:100%; 
+  padding:11px 12px; 
+  margin-bottom:14px; 
+  border-radius:10px; 
+  border:1px solid #ccc; 
+  font-size:14px;
+}
+input:focus, select:focus, textarea:focus { 
+  outline:none; 
+  border-color:#2c5364; 
+}
+button { 
+  width:100%; 
+  padding:13px; 
+  border-radius:12px; 
+  border:none; 
+  background:linear-gradient(135deg,#1d976c,#93f9b9); 
+  font-size:16px; 
+  font-weight:700; 
+  cursor:pointer; 
+  color:#033; 
+  margin-bottom:10px;
+}
+button:hover { transform:translateY(-1px); }
+.address-box { min-height:80px; resize:none; }
+.qr-btn { 
+  background:#007bff; 
+  color:#fff; 
+  border:none; 
+  padding:8px 12px; 
+  border-radius:6px; 
+  cursor:pointer; 
+  margin-top:10px; 
+}
+#availableCount { 
+  font-weight:700; 
+  color:#1d976c; 
+  text-align:center; 
+  margin-bottom:8px; 
+}
+.mini-reset {
+  position: absolute;
+  top: 0px;
+  left: 10px;
+
+  width: 40px;
+  height: 40px;
+
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+
+  font-size: 26px;   
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: 0.3s ease;
+}
+
+.mini-reset:hover {
+  transform: rotate(180deg) scale(1.15);
+}
+
+
+
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  
+  margin-bottom: -75px;
+}
+
+.logo-phut {
+    font-size: 30px;
+    color: #ad0000;
+    margin: 0;
+    position: relative;
+    bottom: 20px;
+    right: 3px;
+}
+
+.Logo {
+    position: relative;
+    bottom: 58px;
+}
+
+.logo-title {
+      font-size: 16px;
+    margin: 2px 0;
+    position: relative;
+    bottom: 80px;
+}
+
+.logo-subtitle {
+  font-size: 16px;
+    margin: 1px 0;
+    position: relative;
+    bottom: 85px;
+}
+
+.logo-slogan {
+    font-size: 11px;
+    font-style: italic;
+    margin: 1px 0;
+    position: relative;
+    bottom: 86px;
+}
+
+
+#reserveBtn {
+  position: relative;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg,#1d976c,#93f9b9); 
+  color: #033;
+  cursor: pointer;
+}
+
+
+#reserveBtn:hover:not(.loading) {
+  filter: brightness(0.85); 
+}
+
+
+#reserveBtn.loading {
+  background: #6c757d; 
+  color: #fff;
+  cursor: default;
+}
+
+#reserveBtn.loading::after {
+  content: " ⏳";
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+#logoutBtn {
+    position: absolute;
+    top: 34px;
+    right: 37px;  
+    background: rgba(214, 48, 49, 0.1); 
+    color: #d63031;
+    border: 1px solid #d63031;
+    padding: 8px 15px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 9999;   
+    width: 100px;
+}
+
+#logoutBtn:hover {
+    background: #d63031;
+    color: white;
+    box-shadow: 0 0 10px rgba(214, 48, 49, 0.3);
+    transform: scale(1.05);
+}
+
+#logoutBtn:active {
+    transform: scale(0.95);
+}
+header {
+    display: flex;
+    justify-content: flex-end; 
+    align-items: center;
+    background: var(--dark);
+    z-index: 1000;
+    padding: 10px 15px;
+    border-radius: 6px;
+}
+.search-results-dropdown {
+    position: absolute;
+    background: white;
+    width: 100%;
+    z-index: 1000;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.search-item {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.search-item:hover {
+    background-color: #f0f0f0;
+}
+
+.footer-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(15, 15, 20, 0.9);
+    padding: 4px 0; 
+    z-index: 99999;
+    border-top: 1px solid rgba(0, 210, 255, 0.2);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    overflow: visible !important;
+}
+
+.footer-content {
+    display: flex;
+    flex-direction: row;   
+    align-items: center;
+    justify-content: center; 
+    flex-wrap: wrap; 
+}
+
+
+
+
+.dev-text {
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    line-height: 1.1;
+    white-space: wrap;
+}
+
+.my-name {
+    display: inline-block;
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    margin-left: 5px;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    filter: drop-shadow(0 0 5px rgba(0, 210, 255, 0.4));
+}
+
+.dev-text strong {
+    font-weight: 800; 
+}
+
+.dev-text:hover .my-name {
+    transform: scale(1.3);
+    filter: drop-shadow(0 0 15px rgba(0, 210, 255, 0.9));
+}
+
+
+.support-text {
+    font-size: 12px;
+    margin: 0 0 4px 0;
+    font-weight: 500;
+}
+
+.error-text {
+    color: #ff4757;
+    text-shadow: 0 0 8px rgba(255, 71, 87, 0.4);
+}
+
+.action-text {
+    color: #25D366;
+    text-shadow: 0 0 8px rgba(37, 211, 102, 0.4);
+    margin-left: 5px;
+}
+
+.footer-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+}
+
+.footer-link {
+    text-decoration: none;
+    color: #fff;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.3s;
+    opacity: 0.8;
+}
+
+.footer-link:hover {
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.footer-icon {
+    width: 22px;
+    height: 22px;
+}
+
+.blue-phone {
+    color: #00d2ff;
+}
+
+.divider {
+    width: 1px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+
+.wa-hover:hover {
+    color: #25D366 !important;
+    filter: drop-shadow(0 0 8px #25D366) drop-shadow(0 0 18px #25D366);
+}
+
+.call-hover:hover {
+    color: #00d2ff !important;
+    filter: drop-shadow(0 0 8px #00d2ff) drop-shadow(0 0 18px #00d2ff);
+}
+
+.wa-hover:active {
+    transform: scale(0.9);
+    color: #25D366 !important;
+    filter: drop-shadow(0 0 10px #25D366) drop-shadow(0 0 25px #25D366) !important;
+}
+
+.call-hover:active {
+    transform: scale(0.9);
+    color: #00d2ff !important;
+    filter: drop-shadow(0 0 10px #00d2ff) drop-shadow(0 0 25px #00d2ff) !important;
+}
+</style>
+</head>
+<body>
+    <header>
+  <button id="logoutBtn">Log Out</button>
+</header>
+<div class="form-box">
+
+
+
+<button onclick="location.reload()" class="mini-reset" title="Reset">
+  🔄
+</button>
+
+
+  <h2>Table Reservation</h2>
+<button id="toggleTimeBtn">switch to free time</button>
+  <div style="position: relative;">
+  <input id="firstName" placeholder="First Name" autocomplete="off">
+  <div id="res-firstName" class="search-results-dropdown"></div>
+</div>
+
+<div style="position: relative;">
+  <input id="lastName" placeholder="Last Name" autocomplete="off">
+  <div id="res-lastName" class="search-results-dropdown"></div>
+</div>
+
+<div style="position: relative;">
+  <input id="phone" type="tel" autocomplete="off">
+  <div id="res-phone" class="search-results-dropdown"></div>
+</div>
+ 
+  <input id="email" placeholder="Email (optional)">
+  <input id="people" type="number" placeholder="Number of People">
+  <textarea id="address" placeholder="Address" class="address-box"></textarea>
+
+  <label>Date</label>
+  <input type="date" id="date">
+
+  <label>Start Time</label>
+  <select id="startTime"></select>
+
+  <label>End Time</label>
+  <select id="endTime"></select>
+
+  <div id="availableCount"></div>
+
+  <label>Available Tables</label>
+  <select id="table">
+    <option value="">Select date & time </option>
+  </select>
+
+  <button id="reserveBtn">Reserve Now</button>
+
+
+
+  <div id="qrContainer" style="display:none;text-align:center;margin-top:15px;">
+
+  <canvas id="qrCanvas"></canvas>
+  <div style="margin-top:10px;">
+    <button class="qr-btn" id="copyBtn">Copy QR</button>
+    <button class="qr-btn" id="shareBtn" style="background:#17a2b8;">Share</button>
+  </div>
+
+  <button class="qr-btn" id="newReservationBtn" style="background:#28a745;margin-top:10px;">
+  Make New Reservation
+  </button>
+
+</div>
+
+</div>
+<div class="footer-bar">
+  <div class="footer-content">
+    
+
+    <span class="dev-text">
+      <strong>
+        Developed by <span class="my-name">Mahmoud El-Hawary</span> — 
+        <span class="error-text">Need help?</span>
+        <span class="action-text">Contact support</span>
+      </strong>
+    </span>
+    <div class="footer-links">
+      <a href="https://wa.me/201284371004" target="_blank" class="footer-link wa-hover">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" class="footer-icon" alt="WhatsApp">
+        WhatsApp
+      </a>
+
+      <div class="divider"></div>
+
+      <a href="tel:+201284371004" class="footer-link call-hover">
+        <svg class="footer-icon" viewBox="0 0 24 24" fill="#00d2ff">
+          <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+        </svg>
+        Call
+      </a>
+
+    </div>
+
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@19.2.16/build/js/intlTelInput.min.js"></script>
+
+<script type="module">
+import { initializeApp } 
+from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app-check.js";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  getDocs,
+  doc,
+  getDoc,
+  query,
+  where
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+import { 
+  getAuth, 
+  onAuthStateChanged, 
+  signOut 
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqt4WhR-KsT5u3eQ1af0_CmKlDNC62few",
+  authDomain: "kitchen-menu-28ba8.firebaseapp.com",
+  projectId: "kitchen-menu-28ba8",
+  storageBucket: "kitchen-menu-28ba8.appspot.com",
+  messagingSenderId: "280104304769",
+  appId: "1:280104304769:web:40ec1188d8a7a7234d0d80"
+};
+
+const app = initializeApp(firebaseConfig);
+const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider('6LfKZHYsAAAAACDl3MgZa-8CNmiG02xuJGNXigiV'), 
+  isTokenAutoRefreshEnabled: true
+});
+const db = getFirestore(app);
+const auth = getAuth(app);
+const user = auth.currentUser;
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    
+    console.log("Logged in as:");
+    
+    try {
+      const docRef = doc(db, "settings", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const restaurantConfig = docSnap.data();
+        console.log("Restaurant Config:", restaurantConfig);
+        
+      } else {
+        console.log("No settings found for this user");
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+    }
+    
+  } else {
+  
+    console.log("User not logged in - Redirecting to login...");
+    window.location.href = "login.html"; 
+  }
+});
+
+
+
+let restaurantConfig = {};
+function applyConfigToUI() {
+  if (!restaurantConfig) return;
+
+  allTables.length = 0;
+  restaurantConfig.tables.forEach(t => allTables.push(t));
+
+  const [openH, openM] = restaurantConfig.openTime.split(':').map(Number);
+  const [closeH, closeM] = restaurantConfig.closeTime.split(':').map(Number);
+
+  let openTotal = openH * 60 + openM;
+  let closeTotal = closeH * 60 + closeM;
+
+  if (closeTotal <= openTotal) closeTotal += 1440;
+
+  startTime.innerHTML = `<option value="">Select Start</option>`;
+  for (let t = openTotal; t < closeTotal; t += 15) {
+    let h = Math.floor(t / 60) % 24;
+    let m = t % 60;
+    let displayH = h % 12 || 12;
+    let ampm = h >= 12 ? "PM" : "AM";
+    let val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    startTime.innerHTML += `<option value="${val}">${displayH}:${String(m).padStart(2, '0')} ${ampm}</option>`;
+  }
+}
+
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "loginreserve.html?redirect=reserve.html";
+    return;
+  }
+
+  const docRef = doc(db, "settings", user.uid);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    restaurantConfig = docSnap.data();
+
+
+    window.restaurantID = restaurantConfig.restaurantID || user.uid; 
+
+    allTables.length = 0; 
+    if (restaurantConfig.tables && restaurantConfig.tables.length > 0) {
+      restaurantConfig.tables.forEach(t => allTables.push(t));
+    }
+
+    applyConfigToUI(); 
+    updateAvailableTables(); 
+  } else {
+    console.log("No settings found for this user");
+  }
+});
+
+
+async function searchCustomers(val, targetId) {
+    const dropdown = document.getElementById(`res-${targetId}`);
+    const searchVal = val.trim().toLowerCase();
+
+    if (searchVal.length < 2) {
+        dropdown.style.display = 'none';
+        return;
+    }
+
+    try {
+        const q = query(
+            collection(db, "reservations"),
+            where("restaurantID", "==", window.restaurantID)
+        );
+
+        const snap = await getDocs(q);
+        let results = [];
+        
+        snap.forEach(doc => {
+            const data = doc.data();
+            const fn = (data.firstName || "").toLowerCase();
+            const ln = (data.lastName || "").toLowerCase();
+            const ph = (data.phone || "");
+            
+            if (fn.includes(searchVal) || ln.includes(searchVal) || ph.includes(searchVal)) {
+                if (!results.find(r => r.phone === ph)) {
+                    results.push(data);
+                }
+            }
+        });
+
+        if (results.length > 0) {
+            dropdown.innerHTML = "";
+            results.forEach(res => {
+                const div = document.createElement("div");
+                div.className = "search-item";
+                div.style = "padding:12px; cursor:pointer; border-bottom:1px solid #eee; background:#fff; transition:0.3s;";
+                div.innerHTML = `
+                    <div style="font-weight:bold; color:#203a43;">${res.firstName} ${res.lastName}</div>
+                    <div style="font-size:12px; color:#1d976c;">${res.phone}</div>
+                `;
+                
+                div.onclick = () => {
+                    document.getElementById('firstName').value = res.firstName || "";
+                    document.getElementById('lastName').value = res.lastName || "";
+                    document.getElementById('email').value = res.email || "";
+                    document.getElementById('address').value = res.address || "";
+                    
+                   
+                    if (window.iti && res.phone) {
+                        window.iti.setNumber(res.phone); 
+                    }
+                    
+                    dropdown.style.display = 'none';
+                };
+                dropdown.appendChild(div);
+            });
+            dropdown.style.display = 'block';
+        } else {
+            dropdown.style.display = 'none';
+        }
+    } catch (err) {
+        console.error("Search Error:", err);
+    }
+}
+               
+
+
+
+document.getElementById('firstName').addEventListener('input', (e) => searchCustomers(e.target.value, 'firstName'));
+document.getElementById('lastName').addEventListener('input', (e) => searchCustomers(e.target.value, 'lastName'));
+document.getElementById('phone').addEventListener('input', (e) => searchCustomers(e.target.value, 'phone'));
+
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-results-dropdown') && !e.target.closest('input')) {
+        document.querySelectorAll('.search-results-dropdown').forEach(d => d.style.display = 'none');
+    }
+});
+
+
+
+window.fillCustomerData = function(fn, ln, ph, em, ad) {
+    console.log("Filling data...");
+    document.getElementById('firstName').value = fn || "";
+    document.getElementById('lastName').value = ln || "";
+    document.getElementById('email').value = em || "";
+    document.getElementById('address').value = ad || "";
+    
+    if (window.iti) {
+        window.iti.setNumber(ph || "");
+    }
+
+
+    document.querySelectorAll('.search-results-dropdown').forEach(d => d.style.display = 'none');
+};
+
+
+
+
+
+
+
+
+
+
+
+  
+
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+    signOut(auth).then(() => {
+        
+        window.location.href = "loginreserve.html"; 
+    }).catch(err => console.error("Logout error:", err));
+});
+
+const phoneInput = document.querySelector("#phone");
+const iti = window.intlTelInput(phoneInput, {
+  initialCountry: "eg",
+  preferredCountries: ["eg", "ru", "de", "fr", "it", "cn", "us", "es", "no"],
+  excludeCountries: ["il"],
+  separateDialCode: false, 
+  autoPlaceholder: "polite",
+  utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@19.2.16/build/js/utils.js"
+});
+window.iti = iti;
+
+
+const dateInput = document.getElementById("date"); 
+const today = new Date();
+const yyyy = today.getFullYear();
+const mm = String(today.getMonth() + 1).padStart(2, '0');
+const dd = String(today.getDate()).padStart(2, '0');
+dateInput.min = `${yyyy}-${mm}-${dd}`;  
+
+let allTables = [];
+
+function updateEndTimes() {
+  endTime.innerHTML = `<option value="">Select End Time</option>`;
+  if (!startTime.value) return;
+
+  const [sh, sm] = startTime.value.split(":").map(Number);
+  let startMin = sh * 60 + sm;
+
+  const minDuration = 60; 
+  const maxDuration = 120;
+
+  const firstOptionMin = startMin + minDuration;
+  const lastOptionMin = startMin + maxDuration;
+
+  for (let t = firstOptionMin; t <= lastOptionMin; t += 15) {
+    let currentTotalMin = t % 1440; 
+    let h = Math.floor(currentTotalMin / 60);
+    let m = currentTotalMin % 60;
+    
+    let displayH = h % 12 || 12;
+
+    let ampm = (t >= 720 && t < 1440) || (t >= 2160) ? "PM" : "AM";
+
+    let val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    endTime.innerHTML += `<option value="${val}">${displayH}:${String(m).padStart(2, '0')} ${ampm}</option>`;
+  }
+}
+
+
+async function updateAvailableTables() {
+  if (!date.value || !startTime.value || !endTime.value) {
+    table.innerHTML = `<option value="">Select date & time </option>`;
+    availableCount.innerText = "";
+    return;
+  }
+
+  const start = new Date(`${date.value}T${startTime.value}`);
+  const end = new Date(`${date.value}T${endTime.value}`);
+
+  const q = query(
+    collection(db,"reservations"),
+    where("restaurantID","==", window.restaurantID)
+  );
+
+  const snap = await getDocs(q);
+
+  let booked = [];
+
+  snap.forEach(doc=>{
+    const r = doc.data();
+    const existingStart = new Date(r.startTime);
+    const existingEnd = new Date(r.endTime);
+
+    if(start < existingEnd && end > existingStart){
+      booked.push(r.table);
+    }
+  });
+
+  const available = allTables.filter(t => !booked.includes(t));
+
+  availableCount.innerText = `${available.length} Tables Available`;
+
+  table.innerHTML = `<option value="">Select Table</option>`;
+  available.forEach(t=>{
+    table.innerHTML += `<option value="${t}">${t}</option>`;
+  });
+
+  if (available.length === 0) {
+    table.innerHTML = `<option>No tables available</option>`;
+  }
+}
+
+
+startTime.addEventListener("change", () => { updateEndTimes(); updateAvailableTables(); });
+endTime.addEventListener("change", updateAvailableTables);
+date.addEventListener("change", updateAvailableTables);
+
+
+reserveBtn.onclick = async () => {
+ 
+  const requiredFields = [
+    { id: 'firstName', name: 'First Name' },
+    { id: 'lastName', name: 'Last Name' },
+    { id: 'people', name: 'Number of People' },
+    { id: 'address', name: 'Address' },
+    { id: 'date', name: 'Date' },
+    { id: 'startTime', name: 'Start Time' },
+    { id: 'endTime', name: 'End Time' },
+    { id: 'table', name: 'Table Selection' }
+  ];
+
+
+  if (!iti.getNumber().trim()) {
+    alert("Please enter a valid phone number.");
+    phoneInput.focus();
+    return;
+  }
+
+
+  for (let field of requiredFields) {
+    const element = document.getElementById(field.id);
+    if (!element || !element.value.trim()) {
+      alert(`Please fill in the ${field.name} field.`);
+      if(element) element.focus();
+      return; 
+    }
+  }
+
+  reserveBtn.disabled = true;
+  reserveBtn.classList.add("loading");
+  reserveBtn.innerText = "Processing...";
+
+  try {
+    const start = new Date(`${date.value}T${startTime.value}`);
+    const end = new Date(`${date.value}T${endTime.value}`);
+    
+    const data = { 
+      restaurantID: window.restaurantID,
+      firstName: firstName.value,
+      lastName: lastName.value,
+      phone: iti.getNumber(window.intlTelInputUtils.numberFormat.E164),
+      email: email.value, 
+      address: address.value,
+      people: Number(people.value),
+      table: table.value,
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+      createdAt: new Date().toISOString()
+    };
+
+    const docRef = await addDoc(collection(db, "reservations"), data);
+    const reservationID = docRef.id; 
+
+  
+    const qrDataForScanner = JSON.stringify({ id: reservationID });
+    await QRCode.toCanvas(qrCanvas, qrDataForScanner, {
+      width: 250,
+      margin: 2,
+      color: { dark: "#2c5364", light: "#ffffff" }
+    });
+
+    setTimeout(() => {
+      const link = document.createElement("a");
+      link.download = `Reservation-${data.firstName}.png`;
+      link.href = qrCanvas.toDataURL("image/png");
+      link.click();
+    }, 500);
+
+    qrContainer.style.display = "block";
+    reserveBtn.innerText = "Reserved Successfully ✔";
+    reserveBtn.classList.remove("loading");
+    reserveBtn.classList.add("success");
+
+  } catch(err) {
+    console.error(err);
+    alert("Something went wrong! Please try again.");
+    reserveBtn.disabled = false;
+    reserveBtn.classList.remove("loading");
+    reserveBtn.innerText = "Reserve Now";
+  }
+};
+
+// reserveBtn.onclick = async () => {
+
+
+//   reserveBtn.disabled = true;
+
+//   reserveBtn.classList.add("loading");
+//   reserveBtn.innerText = "Loading";
+
+//   try {
+//     const start = new Date(`${date.value}T${startTime.value}`);
+//     const end = new Date(`${date.value}T${endTime.value}`);
+    
+    
+//     const data = { 
+//       restaurantID: window.restaurantID,
+//       firstName: firstName.value,
+//       lastName: lastName.value,
+//       phone: iti.getNumber(window.intlTelInputUtils.numberFormat.E164),
+//       email: email.value,
+//       address: address.value,
+//       people: Number(people.value),
+//       table: table.value,
+//       startTime: start.toISOString(),
+//       endTime: end.toISOString(),
+//       createdAt: new Date().toISOString()
+//     };
+
+   
+//     const docRef = await addDoc(collection(db, "reservations"), data);
+//     const reservationID = docRef.id; 
+
+
+//     const qrDataForScanner = JSON.stringify({ id: reservationID });
+
+//     await QRCode.toCanvas(qrCanvas, qrDataForScanner, {
+//       width: 250,
+//       margin: 2,
+//       color: {
+//         dark: "#2c5364",
+//         light: "#ffffff"
+//       }
+//     });
+
+
+//     setTimeout(() => {
+//       const link = document.createElement("a");
+//       link.download = `Reservation-${data.firstName}.png`;
+//       link.href = qrCanvas.toDataURL("image/png");
+//       link.click();
+//     }, 500);
+
+//     qrContainer.style.display = "block";
+//     reserveBtn.innerText = "Reserved ✔";
+//     reserveBtn.classList.remove("loading");
+//     reserveBtn.classList.add("success");
+
+//   } catch(err) {
+//     console.error(err);
+//     alert("Something went wrong!");
+//     reserveBtn.disabled = false;
+//     reserveBtn.classList.remove("loading");
+//     reserveBtn.innerText = "Reserve Now";
+//   }
+// };
+
+
+
+newReservationBtn.onclick = () => {
+  document.querySelectorAll("input, textarea").forEach(el => el.value="");
+  iti.setNumber("");
+  startTime.value="";
+  endTime.innerHTML=`<option value="">Select End</option>`;
+  table.innerHTML=`<option value="">Select date & time </option>`;
+  availableCount.innerText="";
+  qrContainer.style.display="none";
+};
+
+
+
+copyBtn.onclick = async () => {
+  try {
+    const blob = await new Promise(resolve => qrCanvas.toBlob(resolve));
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": blob })
+    ]);
+    alert("Copied ✔");
+  } catch (err) {
+    alert("Copy failed");
+  }
+};
+
+shareBtn.onclick = async () => {
+  try {
+    const blob = await new Promise(resolve => qrCanvas.toBlob(resolve));
+    const file = new File([blob], "reservation.png", { type: "image/png" });
+
+    if (navigator.share) {
+      await navigator.share({
+        title: "My Reservation QR",
+        text: "Here is my reservation QR",
+        files: [file]
+      });
+    } else {
+      alert("Sharing not supported on this browser");
+    }
+  } catch (err) {
+    alert("Share failed");
+  }
+};
+
+const toggleTimeBtn = document.getElementById("toggleTimeBtn");
+let isFreeTime = false; 
+toggleTimeBtn.addEventListener("click", () => {
+  isFreeTime = !isFreeTime;
+
+  const startEl = document.getElementById("startTime");
+  const endEl = document.getElementById("endTime");
+
+  if (isFreeTime) {
+
+    const startInput = document.createElement("input");
+    startInput.type = "time";
+    startInput.id = "startTime";
+    startInput.value = startEl.value;
+    startEl.replaceWith(startInput);
+
+    const endInput = document.createElement("input");
+    endInput.type = "time";
+    endInput.id = "endTime";
+    endInput.value = endEl.value;
+    endEl.replaceWith(endInput);
+
+    startInput.addEventListener("change", updateAvailableTables);
+    endInput.addEventListener("change", updateAvailableTables);
+
+    toggleTimeBtn.innerText = "Switch to Dropdown";
+
+  } else {
+
+    location.reload(); 
+
+  }
+});
+
+  function getKeyInfo(e){
+    return {
+      key: (e.key || '').toLowerCase(),
+      code: (e.code || '').toLowerCase(),
+      keyCode: e.keyCode || e.which || 0,
+      ctrl: e.ctrlKey || false,
+      shift: e.shiftKey || false,
+      alt: e.altKey || false,
+      meta: e.metaKey || false
+    };
+  }
+
+  function handleKeydown(e){
+    const k = getKeyInfo(e);
+
+    const K = { F12: 123, U: 85, S: 83, I: 73, J: 74, C: 67, K: 75, P: 80, M: 77 };
+
+    const isF12 = (k.keyCode === K.F12) || k.key === 'f12' || k.code === 'f12';
+    const isCtrlU = (k.ctrl || k.meta) && (k.key === 'u' || k.keyCode === K.U);
+    const isCtrlS = (k.ctrl || k.meta) && (k.key === 's' || k.keyCode === K.S);
+    const isCtrlShiftI = (k.ctrl || k.meta) && k.shift && (k.key === 'i' || k.keyCode === K.I);
+    const isCtrlShiftJ = (k.ctrl || k.meta) && k.shift && (k.key === 'j' || k.keyCode === K.J);
+    const isCtrlShiftC = (k.ctrl || k.meta) && k.shift && (k.key === 'c' || k.keyCode === K.C);
+    const isCtrlShiftK = (k.ctrl || k.meta) && k.shift && (k.key === 'k' || k.keyCode === K.K);
+    const isCtrlShiftP = (k.ctrl || k.meta) && k.shift && (k.key === 'p' || k.keyCode === K.P);
+    const isCtrlShiftM = (k.ctrl || k.meta) && k.shift && (k.key === 'm' || k.keyCode === K.M);
+
+    if(isF12 || isCtrlU || isCtrlS || isCtrlShiftI || isCtrlShiftJ || isCtrlShiftC || isCtrlShiftK || isCtrlShiftP || isCtrlShiftM){
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+
+    if(k.keyCode === 93 || k.key === 'contextmenu' || k.code === 'contextmenu'){
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+
+  document.addEventListener('keydown', handleKeydown, true);
+
+  document.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+  }, true);
+
+
+  function detectByWindowSize(){
+    try{
+      const wDiff = Math.abs((window.outerWidth || 0) - (window.innerWidth || 0));
+      const hDiff = Math.abs((window.outerHeight || 0) - (window.innerHeight || 0));
+      return (wDiff > threshold) || (hDiff > threshold);
+    }catch(e){
+      return false;
+    }
+  }
+
+  const _detector = new Image();
+  Object.defineProperty(_detector, 'id', {
+    get: function(){
+      try{ createOverlay(); devtoolsOpen = true; }catch(e){}
+      return 'detector';
+    }
+  });
+
+  function checkDevTools(){
+    let detected = false;
+    if(detectByWindowSize()) detected = true;
+    try{ console.log(_detector); }catch(e){}
+    if(detected && !devtoolsOpen){
+      devtoolsOpen = true;
+      createOverlay();
+      console.warn('DevTools detected — overlay enabled.');
+    } else if(!detected && devtoolsOpen){
+      devtoolsOpen = false;
+      removeOverlay();
+    }
+  }
+
+  const intervalId = setInterval(checkDevTools, 1000);
+  window.addEventListener('resize', checkDevTools);
+
+  document.addEventListener('keydown', function(e){
+    const k = getKeyInfo(e);
+    if((k.ctrl || k.meta) && k.key === 'u'){ e.preventDefault(); e.stopPropagation(); return false; }
+  }, true);
+
+  try{ console.info('Page protections (silent) enabled.'); }catch(e){}
+
+
+</script>
+
+</body>
+</html> 
+
